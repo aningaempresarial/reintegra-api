@@ -4,7 +4,7 @@ const router = Router();
 
 router.route('/')
     .get(async (req, res) => {
-        res.send('Hello World!')
+        res.send('Teste Webhook!')
     })
 
 
