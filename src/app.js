@@ -3,7 +3,6 @@ import express from 'express';
 
 // routes
 import indexRoutes from './routes/indexRoutes.js';
-import abacate from './routes/admRoutes.js'
 
 export default class App {
 
@@ -24,7 +23,6 @@ export default class App {
 
     routes() {
         this.app.use('/', indexRoutes)
-        this.app.use('/adm', abacate)
     }
 
 }
