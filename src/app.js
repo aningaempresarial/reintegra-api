@@ -3,8 +3,10 @@ import express from 'express';
 
 // routes
 import indexRoutes from './routes/indexRoutes.js';
+import consola from 'consola';
+import { createPool } from './database.js';
 
-export default class App {
+export class App {
 
     app;
 
@@ -14,11 +16,16 @@ export default class App {
     }
 
     start() {
-        //const PORT = process.env.PORT;
-        const PORT = 8080
+        this.startDatabase();
+        const PORT = process.env.API_PORT;
         this.app.listen(PORT, () => {
-            console.log(`Iniciando na porta: ${PORT}`);
+            consola.success(`Iniciando em http://localhost:${PORT}`);
         });
+    }
+
+    startDatabase() {
+        const pool = createPool();
+        this.app.locals.pool = pool;
     }
 
     routes() {

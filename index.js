@@ -1,5 +1,6 @@
-import App from "./src/app.js";
+import { env } from './src/environments.js';
+env();
 
-const app = new App();
 
-app.start();
+import { run } from './src/server.js';
+run();
