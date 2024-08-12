@@ -1,10 +1,14 @@
 // App
 import express from 'express';
 
-// routes
-import indexRoutes from './routes/indexRoutes.js';
 import consola from 'consola';
-import { createPool } from './database.js';
+
+// DB
+import { createPool } from './db/index.js';
+
+// routes
+import indexRoutes from './routes/index.routes.js';
+import empresaRoutes from './routes/empresa.routes.js';
 
 export class App {
 
@@ -29,7 +33,8 @@ export class App {
     }
 
     routes() {
-        this.app.use('/', indexRoutes)
+        this.app.use('/', indexRoutes);
+        this.app.use('/empresa', empresaRoutes);
     }
 
 }

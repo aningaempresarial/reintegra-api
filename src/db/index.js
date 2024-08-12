@@ -14,12 +14,10 @@ export const createPool = () => {
             queueLimit: 0
         });
 
-
-        consola.success('Banco de Dados Conectado!')
         return pool;
 
     } catch(err) {
-        consola.error('Erro ao conectar Banco de Dados!')
+        console.error(err)
     }
 
 }
