@@ -10,6 +10,7 @@ import { validaSenha } from "../functions/usuario/valida-senha.js";
 import { geraHash } from "../functions/usuario/gera-hash.js";
 import { validaBairro, validaCEP, validaEstado, validaLogradouro, validaNumero } from "../functions/utils/valida-endereco.js";
 import { checkUsernameExists } from "../functions/utils/verifica-usuario.js";
+import { validaTelefone } from "../functions/utils/valida-telefone.js";
 
 const router = Router();
 const upload = multer();
@@ -66,12 +67,11 @@ router.route('/')
             }
 
             // Criação de Usuario
-            const usuario = await criarUsuario(nome, senha, 0);
+            const usuario = await criarUsuario(nome, email, senha, 0);
 
             // Se o usuário foi criado, criar a empresa e registrar no banco
             if (usuario[0]) {
-                const consulta = await query(`INSERT INTO tbEmpresa (nomeEmpresa, emailEmpresa, cnpjEmpresa, idUsuario) VALUES ('${nome}', '${email}', '${String(cnpj).replace(/[^\d]/g, '')}', ${usuario[1]}) `)
-                console.log(consulta);
+                const consulta = await query(`INSERT INTO tbEmpresa (nomeEmpresa, cnpjEmpresa, idUsuario) VALUES ('${nome}', '${String(cnpj).replace(/[^\d]/g, '')}', ${usuario[1]}) `)
 
                 return res.status(201).json({ mensagem: 'Login' });
             } else {
@@ -107,9 +107,9 @@ router.route('/:usuario')
             let empresa = resultado[0];
 
             const telefones = await query(`
-                SELECT numFoneEmpresa
+                SELECT idFoneEmpresa, numFoneEmpresa, visibilidade
                 FROM tbFoneEmpresa
-                WHERE idEmpresa = ${empresa.idEmpresa} AND visibilidade = true
+                WHERE idEmpresa = ${empresa.idEmpresa}
             `);
 
             const enderecos = await query(`
@@ -137,7 +137,6 @@ router.route('/:usuario')
 
         const {
             nome,
-            email,
             emailContato
         } = req.body || {};
 
@@ -150,8 +149,7 @@ router.route('/:usuario')
                     tbEmpresa.nomeEmpresa,
                     tbEmpresa.emailEmpresaContato,
                     tbEmpresa.cnpjEmpresa,
-                    tbUsuario.usuario,
-                    tbUsuario.senhaUsuario
+                    tbUsuario.usuario
                 FROM
                     tbEmpresa
                 JOIN
@@ -173,18 +171,13 @@ router.route('/:usuario')
 
             let nomeAtualizado = nome || empresaAtual.nomeEmpresa;
 
-            // Se email for válido, o novo irá para o banco. Se não, permanece o antigo.
-            let emailAtualizado = empresaAtual.emailEmpresaContato;
-            if (typeof(email) == 'string') {
-                if (validaEmail(email)) {
-                    emailAtualizado = email;
-                }
-            }
-
             let emailContatoAtualizado = empresaAtual.emailEmpresaContato;
             if (typeof(emailContato) == 'string') {
                 if (validaEmail(emailContato)) {
-                    emailContatoAtualizado = emailContato;
+                    const buscaEmail = await query(`SELECT emailEmpresaContato FROM tbEmpresa WHERE emailEmpresaContato = '${emailAtualizado}'`)
+                    if (buscaEmail.length == 0) {
+                        emailContatoAtualizado = emailContato;
+                    }
                 }
             }
 
@@ -194,7 +187,6 @@ router.route('/:usuario')
                 JOIN tbUsuario ON tbUsuario.idUsuario = tbEmpresa.idUsuario
                 SET
                     tbEmpresa.nomeEmpresa = '${nomeAtualizado}',
-                    tbEmpresa.emailEmpresa = '${emailAtualizado}',
                     tbEmpresa.emailEmpresaContato = ${emailContatoAtualizado !== null ? `'${emailContatoAtualizado}'` : 'NULL'}
                 WHERE
                     tbUsuario.usuario = '${usuario}'
@@ -359,16 +351,91 @@ router.route('/endereco/:usuario')
 
     })
 
+router.route('/endereco/:usuario/:id')
+    .delete(async (req, res) => {
+        const usuario = req.params.usuario || undefined;
+
+        if (typeof usuario == 'undefined') {
+            return res.status(400).json({ erro: '`usuario` nao é um campo válido.' });
+        }
+
+        const id = req.params.id || undefined;
+
+        if (typeof id == 'undefined') {
+            return res.status(400).json({ erro: '`id` nao é um campo válido.' });
+        }
+
+        try {
+            const resultado = await query(`
+                SELECT tbEmpresa.idEmpresa
+                FROM tbEmpresa
+                JOIN tbUsuario ON tbEmpresa.idUsuario = tbUsuario.idUsuario
+                WHERE tbUsuario.usuario = '${usuario}'
+            `);
+
+            if (resultado.length == 0) {
+                return res.status(404).erro('Empresa não encontrada')
+            }
+            const empresa = resultado[0];
+
+            const consulta = query(`DELETE FROM tbEnderecoEmpresa WHERE idEmpresa = ${empresa.idEmpresa} AND idEnderecoEmpresa = ${id}`)
+
+            return res.status(200).json({ mensagem: 'Endereço excluído com êxito.' })
+        } catch(erro) {
+            res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
+        }
+
+    })
 
 router.route('/telefone/:usuario')
     .post(upload.none(), async (req, res) => {
 
+        const usuario = req.params.usuario || 'admin';
+
+        if (usuario == 'admin') {
+            return res.status(400).json({ erro: '`usuario` nao é um campo válido.' });
+        }
+
         const {
-            id,
             numero,
             visibilidade
         } = req.body || {};
 
+        if (!validaTelefone(numero)) {
+            return res.status(400).json({ erro: '`numero` não é um campo válido.' });
+        }
+
+        const visibilidadeBoolean = visibilidade === 'true' || visibilidade === true;
+
+        try {
+            const usuarioExistente = await checkUsernameExists(usuario);
+            if (!usuarioExistente) {
+                return res.status(401).json({ erro: 'Usuário não existe.' });
+            }
+
+            // Verifica se o telefone existe
+            const telefoneAtual = await query(`
+                SELECT *
+                FROM tbFoneEmpresa
+                WHERE numFoneEmpresa = '${numero}'
+            `);
+
+            if (telefoneAtual.length != 0) {
+                return res.status(400).json({ erro: 'Telefone já foi cadastrado.' });
+            }
+
+            const resultado = await query(`SELECT idEmpresa FROM tbEmpresa JOIN tbUsuario ON tbEmpresa.idUsuario = tbUsuario.idUsuario WHERE tbUsuario.usuario = '${usuario}'`);
+            const idEmpresa = resultado[0].idEmpresa;
+
+            await query(`
+            INSERT INTO tbFoneEmpresa (numFoneEmpresa, visibilidade, idEmpresa)
+            VALUES ('${numero}', ${visibilidadeBoolean}, ${idEmpresa})`);
+
+            res.status(201).json({ mensagem: 'Telefone cadastrado com sucesso.' });
+
+        } catch (erro) {
+            res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
+        }
     })
     .put(upload.none(), async (req, res) => {
 
@@ -384,7 +451,101 @@ router.route('/telefone/:usuario')
             visibilidade
         } = req.body || {};
 
+        if (!id) {
+            return res.status(400).json({ erro: '`id` do telefone é um campo obrigatório.' });
+        }
+
+        const visibilidadeBoolean = visibilidade === 'true' || visibilidade === true;
+
+        try {
+            // Passo 1 - Verifica se a empresa existe
+            const resultado = await query(`
+                SELECT tbEmpresa.idEmpresa
+                FROM tbEmpresa
+                JOIN tbUsuario ON tbEmpresa.idUsuario = tbUsuario.idUsuario
+                WHERE tbUsuario.usuario = '${usuario}'
+            `);
+
+            if (resultado.length === 0) {
+                return res.status(404).json({ erro: 'Empresa não encontrada.' });
+            }
+
+            const idEmpresa = resultado[0].idEmpresa;
+
+            // Passo 2 - Verifica se o telefone existe
+            const telefoneAtual = await query(`
+                SELECT *
+                FROM tbFoneEmpresa
+                WHERE idFoneEmpresa = ${id} AND idEmpresa = ${idEmpresa}
+            `);
+
+            if (telefoneAtual.length === 0) {
+                return res.status(404).json({ erro: 'Telefone não encontrado.' });
+            }
+
+            // Passo 3 - Verifica se os dados são válidos
+
+            let numeroAtualizado = telefoneAtual[0].numFoneEmpresa;
+            if (validaTelefone(new_numero)) {
+                numeroAtualizado = new_numero;
+            }
+
+            let visibilidadeAtualizada = telefoneAtual[0].visibilidadeTelefoneEmpresa;
+            if (visibilidade !== undefined) {
+                visibilidadeAtualizada = visibilidadeBoolean;
+            }
+
+            // Passo 4 - Inserir dados no banco
+
+            await query(`UPDATE tbFoneEmpresa SET
+            numFoneEmpresa = '${numeroAtualizado}',
+            visibilidade = ${visibilidadeAtualizada}
+            WHERE idFoneEmpresa = ${id} AND idEmpresa = ${idEmpresa}`);
+
+            return res.status(200).json({ mensagem: 'Telefone atualizado com êxito!' });
+
+        } catch (erro) {
+            res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
+        }
 
     })
+
+router.route('/telefone/:usuario/:id')
+    .delete(async (req, res) => {
+        const usuario = req.params.usuario || undefined;
+
+        if (typeof usuario == 'undefined') {
+            return res.status(400).json({ erro: '`usuario` nao é um campo válido.' });
+        }
+
+        const id = req.params.id || undefined;
+
+        if (typeof id == 'undefined') {
+            return res.status(400).json({ erro: '`id` nao é um campo válido.' });
+        }
+
+        try {
+            const resultado = await query(`
+                SELECT tbEmpresa.idEmpresa
+                FROM tbEmpresa
+                JOIN tbUsuario ON tbEmpresa.idUsuario = tbUsuario.idUsuario
+                WHERE tbUsuario.usuario = '${usuario}'
+            `);
+
+            if (resultado.length == 0) {
+                return res.status(404).erro('Empresa não encontrada')
+            }
+            const empresa = resultado[0];
+
+            const consulta = query(`DELETE FROM tbFoneEmpresa WHERE idEmpresa = ${empresa.idEmpresa} AND idFoneEmpresa = ${id}`)
+
+            return res.status(200).json({ mensagem: 'Telefone excluído com êxito.' })
+        } catch(erro) {
+            res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
+        }
+
+    })
+
+
 
 export default router;

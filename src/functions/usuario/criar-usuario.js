@@ -2,8 +2,9 @@ import { generateUniqueUsername } from "./criar-username.js"
 import bcrypt from 'bcryptjs';
 import { query } from "../../db/query.js";
 import { geraHash } from "./gera-hash.js";
+import { verificaEmailExiste } from "./verifica-email.js";
 
-export function criarUsuario(nome, senha, tipo) {
+export function criarUsuario(nome, email, senha, tipo) {
     // a função retorna um vetor. a primeira posição é "true" ou "false" (true é se o usuario for criado com êxito)
     // se for "true", a segunda posição do vetor é o ID
 
@@ -24,22 +25,30 @@ export function criarUsuario(nome, senha, tipo) {
         const tipoEntidade = entidades[tipo]
 
         try {
-            const username = await generateUniqueUsername(nome);
-            const hash = await geraHash(senha);
 
-            try {
-                const insertResult = await query(
-                    `INSERT INTO tbUsuario (usuario, senhaUsuario, dataCriacao, dataModificacao, tipoEntidade, statusEntidade)
-                        VALUES ('${username}', '${hash}', NOW(), NOW(), '${tipoEntidade}', 'ativo')`,
-                    [username, hash, tipo]
-                );
+            const emailExiste = await verificaEmailExiste(email);
 
-                const userId = insertResult.insertId;
+            if (!emailExiste) {
+                const username = await generateUniqueUsername(nome);
+                const hash = await geraHash(senha);
 
-                resolve([true, userId]);
-            } catch (error) {
-                reject(error);
+                try {
+                    const insertResult = await query(
+                        `INSERT INTO tbUsuario (usuario, emailUsuario, senhaUsuario, dataCriacao, dataModificacao, tipoEntidade, statusEntidade)
+                            VALUES ('${username}', '${email}', '${hash}', NOW(), NOW(), '${tipoEntidade}', 'ativo')`,
+                        [username, hash, tipo]
+                    );
+
+                    const userId = insertResult.insertId;
+
+                    resolve([true, userId]);
+                } catch (error) {
+                    reject(error);
+                }
+            } else {
+                reject('Email já existe.');
             }
+
         } catch (error) {
             reject(error);
         }

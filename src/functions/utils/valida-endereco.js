@@ -19,6 +19,13 @@ export function validaBairro(bairro) {
     return typeof bairro === 'string' && bairro.length > 0;
 }
 
+const estadosValidos = [
+    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
+    'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
+    'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+];
+
+
 export function validaEstado(estado) {
     if (estado === undefined || estado === null) return false;
     return typeof estado === 'string' && estadosValidos.includes(estado.toUpperCase());
