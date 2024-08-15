@@ -1,6 +1,6 @@
 // App
 import express from 'express';
-
+import cors from 'cors';
 import consola from 'consola';
 
 // DB
@@ -9,6 +9,7 @@ import { createPool } from './db/index.js';
 // routes
 import indexRoutes from './routes/index.routes.js';
 import empresaRoutes from './routes/empresa.routes.js';
+import adminUsuarioRoutes from './routes/admin-usuario.routes.js';
 
 export class App {
 
@@ -16,6 +17,7 @@ export class App {
 
     constructor() {
         this.app = express();
+        this.cors();
         this.routes();
     }
 
@@ -32,9 +34,20 @@ export class App {
         this.app.locals.pool = pool;
     }
 
+    cors() {
+        const corsOptions = {
+            origin: '*',
+            methods: ['GET', 'POST', 'PUT', 'DELETE'],
+            allowedHeaders: ['Content-Type', 'Authorization'],
+        };
+
+        this.app.use(cors(corsOptions));
+    }
+
     routes() {
         this.app.use('/', indexRoutes);
         this.app.use('/empresa', empresaRoutes);
+        this.app.use('/admin/usuario', adminUsuarioRoutes);
     }
 
 }
