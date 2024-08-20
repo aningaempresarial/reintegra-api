@@ -127,6 +127,7 @@ router.route('/:usuario')
             res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
         }
     })
+
     .put(upload.none(), async (req, res) => {
 
         const usuario = req.params.usuario || 'admin';
@@ -259,6 +260,8 @@ router.route('/endereco/:usuario')
 
 
     })
+
+    
     .put(upload.none(), async (req, res) => {
 
         const usuario = req.params.usuario || 'admin';
