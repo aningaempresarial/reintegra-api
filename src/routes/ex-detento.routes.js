@@ -37,7 +37,7 @@ router.route('/')
 router.route('/')
     .post(upload.none(), async (req, res) => {
 
-        const { nome, senha } = req.body || {};
+        const { nome, email, dataNasc, logradouro, num, cep, bairro, cidade, estado, senha } = req.body || {};
 
         // Verificações de Existência de Conteúdo
 
@@ -55,11 +55,11 @@ router.route('/')
             console.log (senha)
             //
             // Criação de Usuario
-            const usuario = await criarUsuario(nome, 'sabrinalinda@gmail.com', senha, 3);
+            const usuario = await criarUsuario(nome, email, senha, 3);
 
             // Se o usuário foi criado, criar a empresa e registrar no banco
             if (usuario[0]) {
-                const consulta = await query(`INSERT INTO tbExDetento (nomeExDetento, idUsuario) VALUES ('${nome}', ${usuario[1]}) `)
+                const consulta = await query(`INSERT INTO tbExDetento (nomeExDetento, dataNascExDetento, logadouroExDetento, numExDetento, cepExDetento, bairroExDetento, cidadeExDetento, estadoExDetento idUsuario) VALUES ('${nome}', '${dataNasc}', '${logradouro}', '${num}', '${cep}', '${bairro}', '${cidade}', '${estado}', ${usuario[1]})`)
 
                 return res.status(201).json({ mensagem: 'Login' });
             } else {
