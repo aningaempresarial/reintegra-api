@@ -9,6 +9,7 @@ import { validaTelefone } from "../functions/utils/valida-telefone.js";
 const router = Router();
 const upload = multer();
 
+
 /*
 Códigos:
 200 - Ok! Tudo certo
@@ -19,11 +20,13 @@ Códigos:
 500 - Erro do server
 */
 
+
+
 router.route('/')
     .get(async (req, res) => {
 
          try {
-            const resultado = await query(`SELECT idExDetento, nomeExDetento, dataNascExDetento, logadouroExDetento, numExDetento, cepExDetento, bairroExDetento, cidadeExDetento, estadoExDetento, usuario FROM tbExDetento JOIN tbUsuario ON tbUsuario.idUsuario = tbExDetento.idUsuario WHERE statusEntidade = 'ativo'`);
+            const resultado = await query(`SELECT idExDetento, nomeExDetento, dataNascExDetento, logadouroExDetento, numExDetento, cepExDetento, bairroExDetento, cidadeExDetento, estadoExDetento,tbUsuario.idUsuario, usuario FROM tbExDetento JOIN tbUsuario ON tbUsuario.idUsuario = tbExDetento.idUsuario WHERE statusEntidade = 'ativo'`);
             res.json(resultado);
          } catch (erro) {
             res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
@@ -48,9 +51,11 @@ router.route('/')
 
         // Verificações no Banco
         try {
-
+            console.log (nome)
+            console.log (senha)
+            // 
             // Criação de Usuario
-            const usuario = await criarUsuario(nome, senha, 0);
+            const usuario = await criarUsuario(nome, 'sabrinalinda@gmail.com', senha, 3);
 
             // Se o usuário foi criado, criar a empresa e registrar no banco
             if (usuario[0]) {
