@@ -53,7 +53,7 @@ router.route('/')
         try {
             console.log (nome)
             console.log (senha)
-            // 
+            //
             // Criação de Usuario
             const usuario = await criarUsuario(nome, 'sabrinalinda@gmail.com', senha, 3);
 
@@ -62,7 +62,9 @@ router.route('/')
                 const consulta = await query(`INSERT INTO tbExDetento (nomeExDetento, idUsuario) VALUES ('${nome}', ${usuario[1]}) `)
 
                 return res.status(201).json({ mensagem: 'Login' });
-            } 
+            } else {
+                return res.status(500).json({ erro: 'Erro ao criar usuario.' });
+            }
 
         } catch (erro) {
             res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
@@ -81,7 +83,7 @@ router.route('/')
 
         try {
             const resultado = await query(`
-                SELECT idExDetento, nomeExDetento, dataNascExDetento, logadouroExDetento, numExDetento, cepExDetento, bairroExDetento, cidadeExDetento, estadoExDetento, 
+                SELECT idExDetento, nomeExDetento, dataNascExDetento, logadouroExDetento, numExDetento, cepExDetento, bairroExDetento, cidadeExDetento, estadoExDetento,
                 usuario FROM tbExDetento JOIN tbUsuario ON tbUsuario.idUsuario = tbExDetento.idUsuario WHERE statusEntidade = 'ativo' AND usuario = '${usuario}'
             `);
 
@@ -98,7 +100,7 @@ router.route('/')
             `);
 
             exDetento.telefones = telefones;
-  
+
 
             res.json(exDetento);
 
