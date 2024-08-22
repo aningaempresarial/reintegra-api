@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { query } from "../../db/query.js";
 
-export async function validaSenha(usuario, senha, hash) {
+export async function validaSenha(usuario, senha) {
     try {
 
         const resultado = await query(`SELECT senhaUsuario, statusEntidade FROM tbUsuario WHERE usuario = '${usuario}'`);
