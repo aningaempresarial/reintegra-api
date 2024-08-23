@@ -11,6 +11,7 @@ import indexRoutes from './routes/index.routes.js';
 import empresaRoutes from './routes/empresa.routes.js';
 import adminUsuarioRoutes from './routes/admin-usuario.routes.js';
 import exDetentoRoutes from './routes/ex-detento.routes.js';
+import userRoutes from './routes/user.routes.js';
 
 
 export class App {
@@ -48,10 +49,10 @@ export class App {
 
     routes() {
         this.app.use('/', indexRoutes);
+        this.app.use('/user', userRoutes);
         this.app.use('/empresa', empresaRoutes);
         this.app.use('/admin/usuario', adminUsuarioRoutes);
         this.app.use('/exDetento', exDetentoRoutes);
-
     }
 
 }
