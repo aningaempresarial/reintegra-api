@@ -5,6 +5,7 @@ import { query } from '../db/query.js';
 import { criarUsuario } from "../functions/usuario/criar-usuario.js";
 import { validaSenha } from "../functions/usuario/valida-senha.js";
 import { validaTelefone } from "../functions/utils/valida-telefone.js";
+import { checkUsernameExists } from "../functions/utils/verifica-usuario.js";
 
 const router = Router();
 const upload = multer();
@@ -26,7 +27,7 @@ router.route('/')
     .get(async (req, res) => {
 
          try {
-            const resultado = await query(`SELECT idExDetento, nomeExDetento, dataNascExDetento, logadouroExDetento, numExDetento, cepExDetento, bairroExDetento, cidadeExDetento, estadoExDetento,tbUsuario.idUsuario, usuario FROM tbExDetento JOIN tbUsuario ON tbUsuario.idUsuario = tbExDetento.idUsuario WHERE statusEntidade = 'ativo'`);
+            const resultado = await query(`SELECT idExDetento, nomeExDetento, dataNascExDetento, logradouroExDetento, numExDetento, cepExDetento, bairroExDetento, cidadeExDetento, estadoExDetento,tbUsuario.idUsuario, usuario FROM tbExDetento JOIN tbUsuario ON tbUsuario.idUsuario = tbExDetento.idUsuario WHERE statusEntidade = 'ativo'`);
             res.json(resultado);
          } catch (erro) {
             res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
@@ -37,7 +38,7 @@ router.route('/')
 router.route('/')
     .post(upload.none(), async (req, res) => {
 
-        const { nome, email, dataNasc, logradouro, num, cep, bairro, cidade, estado, senha } = req.body || {};
+        const { nome, cpf, email, dataNasc, logradouro, num, cep, bairro, cidade, estado, senha } = req.body || {};
 
         // Verificações de Existência de Conteúdo
 
@@ -59,7 +60,7 @@ router.route('/')
 
             // Se o usuário foi criado, criar a empresa e registrar no banco
             if (usuario[0]) {
-                const consulta = await query(`INSERT INTO tbExDetento (nomeExDetento, dataNascExDetento, logadouroExDetento, numExDetento, cepExDetento, bairroExDetento, cidadeExDetento, estadoExDetento idUsuario) VALUES ('${nome}', '${dataNasc}', '${logradouro}', '${num}', '${cep}', '${bairro}', '${cidade}', '${estado}', ${usuario[1]})`)
+                const consulta = await query(`INSERT INTO tbExDetento (nomeExDetento, cpfExDetento, dataNascExDetento, logradouroExDetento, numExDetento, cepExDetento, bairroExDetento, cidadeExDetento, estadoExDetento, idUsuario) VALUES ('${nome}', '${cpf}', '${dataNasc}', '${logradouro}', '${num}', '${cep}', '${bairro}', '${cidade}', '${estado}', ${usuario[1]})`)
 
                 return res.status(201).json({ mensagem: 'Login' });
             } else {
@@ -83,7 +84,7 @@ router.route('/')
 
         try {
             const resultado = await query(`
-                SELECT idExDetento, nomeExDetento, dataNascExDetento, logadouroExDetento, numExDetento, cepExDetento, bairroExDetento, cidadeExDetento, estadoExDetento,
+                SELECT idExDetento, nomeExDetento, dataNascExDetento, logradouroExDetento, numExDetento, cepExDetento, bairroExDetento, cidadeExDetento, estadoExDetento,
                 usuario FROM tbExDetento JOIN tbUsuario ON tbUsuario.idUsuario = tbExDetento.idUsuario WHERE statusEntidade = 'ativo' AND usuario = '${usuario}'
             `);
 
@@ -94,7 +95,7 @@ router.route('/')
             let exDetento = resultado[0];
 
             const telefones = await query(`
-                SELECT idFoneExDetento, numFoneExDetento, visibilidade
+                SELECT idFoneExDetento, numFoneExDetento
                 FROM tbFoneExDetento
                 WHERE idExDetento = ${exDetento.idExDetento}
             `);
@@ -120,6 +121,12 @@ router.route('/')
 
         const {
             nome,
+            logradouro,
+            num,
+            cep,
+            bairro,
+            cidade,
+            estado
         } = req.body || {};
 
         try {
@@ -128,7 +135,7 @@ router.route('/')
 
             const resultado = await query(`
                 SELECT
-                    tbExDetento.nomeExDetento,
+                    tbExDetento.cpfExDetento,
                     tbUsuario.usuario
                 FROM
                     tbExDetento
@@ -156,7 +163,13 @@ router.route('/')
                 UPDATE tbExDetento
                 JOIN tbUsuario ON tbUsuario.idUsuario = tbExDetento.idUsuario
                 SET
-                    tbExDetento.nomeExDetento = '${nomeAtualizado}',
+                    nomeExDetento = '${nomeAtualizado}',
+                    logradouroExDetento = '${logradouro}',
+                    numExDetento = '${num}',
+                    cepExDetento = '${cep}',
+                    bairroExDetento = '${bairro}',
+                    cidadeExDetento = '${cidade}',
+                    estadoExDetento = '${estado}'
                 WHERE
                     tbUsuario.usuario = '${usuario}'
             `);
@@ -188,8 +201,6 @@ router.route('/')
             return res.status(400).json({ erro: '`numero` não é um campo válido.' });
         }
 
-        const visibilidadeBoolean = visibilidade === 'true' || visibilidade === true;
-
         try {
             const usuarioExistente = await checkUsernameExists(usuario);
             if (!usuarioExistente) {
@@ -211,8 +222,8 @@ router.route('/')
             const idExDetento = resultado[0].idExDetento;
 
             await query(`
-            INSERT INTO tbFoneExDetento (numFoneExDetento, idEmpresa)
-            VALUES ('${numero}', ${visibilidadeBoolean}, ${idExDetento})`);
+            INSERT INTO tbFoneExDetento (numFoneExDetento, idExDetento)
+            VALUES ('${numero}', ${idExDetento})`);
 
             res.status(201).json({ mensagem: 'Telefone cadastrado com sucesso.' });
 
@@ -277,8 +288,7 @@ router.route('/')
             // Passo 4 - Inserir dados no banco
 
             await query(`UPDATE tbFoneExDetento SET
-            numFoneExDetento = '${numeroAtualizado}',
-            visibilidade = ${visibilidadeAtualizada}
+            numFoneExDetento = '${numeroAtualizado}'
             WHERE idFoneExDetento = ${id} AND idExDetento = ${idExDetento}`);
 
             return res.status(200).json({ mensagem: 'Telefone atualizado com êxito!' });
@@ -316,7 +326,7 @@ router.route('/')
             }
             const exDetento = resultado[0];
 
-            const consulta = query(`DELETE FROM tbFoneExDetento WHERE idExDetento = ${exDetento.idExDetento} AND idFoneExDetendo = ${id}`)
+            const consulta = query(`DELETE FROM tbFoneExDetento WHERE idExDetento = ${exDetento.idExDetento} AND idFoneExDetento = ${id}`)
 
             return res.status(200).json({ mensagem: 'Telefone excluído com êxito.' })
         } catch(erro) {
