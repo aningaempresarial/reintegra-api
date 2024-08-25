@@ -550,7 +550,7 @@ router.route('/telefone/:usuario/:id')
     })
 
 
-router.route('usuario/cnpj/:cnpj')
+router.route('/usuario/cnpj/:cnpj')
     .get(async (req, res) => {
 
         const cnpj = req.params.cnpj || undefined;
