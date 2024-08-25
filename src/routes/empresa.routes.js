@@ -550,30 +550,30 @@ router.route('/telefone/:usuario/:id')
     })
 
 
-router.route('usuario/cnpj/:cnpj')
-    .get(async (req, res) => {
+// router.route('usuario/cnpj/:cnpj')
+//     .get(async (req, res) => {
 
-        const cnpj = req.params.cnpj || undefined;
+//         const cnpj = req.params.cnpj || undefined;
 
-        if (typeof cnpj == 'undefined') {
-            return res.status(400).json({ erro: '`cnpj` nao é um campo válido.' });
-        }
+//         if (typeof cnpj == 'undefined') {
+//             return res.status(400).json({ erro: '`cnpj` nao é um campo válido.' });
+//         }
 
 
-        try {
+//         try {
 
-            const resposta = await query(`SELECT usuario FROM tbUsuario JOIN tbEmpresa ON tbEmpresa.idUsuario = tbUsuario.idUsuario WHERE cnpj = '${cnpj}'`);
+//             const resposta = await query(`SELECT usuario FROM tbUsuario JOIN tbEmpresa ON tbEmpresa.idUsuario = tbUsuario.idUsuario WHERE cnpj = '${cnpj}'`);
 
-            if (resposta.length == 0) {
-                return res.status(404).json({ erro: 'Usuário não encontrado.' })
-            }
+//             if (resposta.length == 0) {
+//                 return res.status(404).json({ erro: 'Usuário não encontrado.' })
+//             }
 
-            return res.json(resposta[0])
+//             return res.json(resposta[0])
 
-        } catch (erro) {
-            res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
-        }
+//         } catch (erro) {
+//             res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
+//         }
 
-    })
+//     })
 
 export default router;
