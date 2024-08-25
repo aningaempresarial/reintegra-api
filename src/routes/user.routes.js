@@ -76,7 +76,7 @@ router.route('/login')
                 return res.status(500).json({ erro: 'Usuário ou senha incorretos.'});
             }
 
-            return res.status(200).json({ token: logou[1], entidade: usuario.tipoEntidade });
+            return res.status(200).json({ token: logou[1], entidade: usuario.tipoEntidade, usuario: usuario.usuario });
 
         } catch (erro) {
             res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
