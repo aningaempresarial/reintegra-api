@@ -34,3 +34,23 @@ export async function login(usuario, senha, tipoEntidade) {
         return [false];
     }
 }
+
+export async function getUser(token) {
+    try {
+        const decoded = jwt.verify(token, secret);
+
+        const usuario = decoded.usuario;
+
+        const resultado = await query(`SELECT * FROM tbUsuario WHERE usuario = '${usuario}'`);
+
+        if (resultado.length > 0) {
+            return [true, resultado[0]];
+        } else {
+            return [false];
+        }
+
+    } catch (error) {
+        console.error('Erro ao verificar o token ou buscar o usuário:', error);
+        return [false];
+    }
+}

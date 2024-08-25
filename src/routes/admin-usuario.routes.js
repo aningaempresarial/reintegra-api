@@ -6,7 +6,6 @@ const router = Router();
 const upload = multer();
 
 router.route('/')
-router.route('/')
     .get(async (req, res) => {
         try {
             const { nome, tipoEntidade, statusEntidade, idUsuario, orderBy, orderDirection = 'ASC' } = req.query;

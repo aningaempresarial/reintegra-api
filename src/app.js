@@ -10,6 +10,7 @@ import { createPool } from './db/index.js';
 import indexRoutes from './routes/index.routes.js';
 import empresaRoutes from './routes/empresa.routes.js';
 import adminUsuarioRoutes from './routes/admin-usuario.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 import exDetentoRoutes from './routes/ex-detento.routes.js';
 import userRoutes from './routes/user.routes.js';
 import sspRoutes from './routes/ssp.routes.js';
@@ -56,6 +57,7 @@ export class App {
         this.app.use('/empresa', empresaRoutes);
         this.app.use('/admin/usuario', adminUsuarioRoutes);
         this.app.use('/exDetento', exDetentoRoutes);
+        this.app.use('/admin', adminRoutes);
     }
 
 }
