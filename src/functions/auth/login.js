@@ -26,7 +26,7 @@ export async function login(usuario, senha, tipoEntidade) {
             return [true, token];
 
         } else {
-            const resultado = await query(`UPDATE tbUsuario SET tentativasLogin = tentativasLogin + 1 WHERE usuario = '${usuario}'`)
+            const resultado = await query(`UPDATE tbUsuario SET tentativasLogin = COALESCE(tentativasLogin, 0) + 1 WHERE usuario = '${usuario}'`)
             return [false]
         }
 

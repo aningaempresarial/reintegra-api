@@ -12,6 +12,7 @@ import empresaRoutes from './routes/empresa.routes.js';
 import adminUsuarioRoutes from './routes/admin-usuario.routes.js';
 import exDetentoRoutes from './routes/ex-detento.routes.js';
 import userRoutes from './routes/user.routes.js';
+import sspRoutes from './routes/ssp.routes.js';
 
 
 export class App {
@@ -48,6 +49,8 @@ export class App {
     }
 
     routes() {
+        this.app.use('/ssp', sspRoutes);
+
         this.app.use('/', indexRoutes);
         this.app.use('/user', userRoutes);
         this.app.use('/empresa', empresaRoutes);

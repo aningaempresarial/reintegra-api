@@ -35,6 +35,53 @@ router.route('/')
 
     })
 
+router.route('/simple')
+    .post(upload.none(), async (req, res) => {
+        const { nome, cpf, email, sexo, dataNasc, senha } = req.body || {};
+
+        if (typeof(nome) != 'string') {
+            return res.status(400).json({ erro: '`nome` não é um campo válido.' });
+        }
+
+        if (typeof(cpf) != 'string') {
+            return res.status(400).json({ erro: '`cpf` não é um campo válido.' });
+        }
+
+        if (typeof(email) != 'string') {
+            return res.status(400).json({ erro: '`email` não é um campo válido.' });
+        }
+
+        if (typeof(sexo) != 'string') {
+            return res.status(400).json({ erro: '`sexo` não é um campo válido.' });
+        }
+
+        if (typeof(dataNasc) != 'string') {
+            return res.status(400).json({ erro: '`dataNasc` não é um campo válido.' });
+        }
+
+        if (typeof(senha) != 'string') {
+            return res.status(400).json({ erro: '`senha` não é um campo válido.' });
+        }
+
+        try {
+
+            const usuario = await criarUsuario(nome, email, senha, 3);
+
+            // Se o usuário foi criado, criar o exdetento e registrar no banco
+            if (usuario[0]) {
+                const consulta = await query(`INSERT INTO tbExDetento (nomeExDetento, cpfExDetento, dataNascExDetento, sexoExDetento, idUsuario) VALUES ('${nome}', '${cpf}', '${dataNasc}', '${sexo}', ${usuario[1]})`)
+
+                return res.status(201).json({ mensagem: 'Login' });
+            } else {
+                return res.status(500).json({ erro: 'Erro ao criar usuario.' });
+            }
+
+        } catch (erro) {
+            res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
+        }
+
+    })
+
 router.route('/')
     .post(upload.none(), async (req, res) => {
 
@@ -74,7 +121,7 @@ router.route('/')
     })
 
 
-    router.route('/:usuario')
+router.route('/:usuario')
     .get(async (req, res) => {
         const usuario = req.params.usuario || 'admin';
 
@@ -299,7 +346,7 @@ router.route('/')
 
     })
 
-    router.route('/telefone/:usuario/:id')
+router.route('/telefone/:usuario/:id')
     .delete(async (req, res) => {
         const usuario = req.params.usuario || undefined;
 
@@ -333,6 +380,80 @@ router.route('/')
             res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
         }
 
+    })
+
+router.route('/existe/:cpf')
+    .get(async (req, res) => {
+
+        const cpf = req.params.cpf || undefined;
+
+        if (typeof cpf == 'undefined') {
+            return res.status(400).json({ erro: '`cpf` nao é um campo válido.' });
+        }
+
+        try {
+            const resultado = await query(`
+                SELECT cpfExDetento
+                FROM tbExDetento
+                WHERE cpfExDetento = '${cpf}'
+            `);
+
+            if (resultado.length > 0) {
+                return res.json({ existe: true })
+            }
+
+            return res.json({ existe: false })
+
+        } catch(erro) {
+            res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
+        }
+    })
+
+// verifica se o cadastro está completo
+router.route('/completo/:usuario')
+    .get(async (req, res) => {
+        const usuario = req.params.usuario || undefined;
+
+        if (typeof usuario == 'undefined') {
+            return res.status(400).json({
+                erro: '`usuario` nao é um campo válido.'
+            })
+        }
+
+        try {
+            const resultado = await query(`
+            SELECT e.*, f.*, ed.*, ex.*
+            FROM tbExDetento e
+            LEFT JOIN tbFoneExDetento f ON e.idExDetento = f.idExDetento
+            LEFT JOIN tbEducacaoExDetento ed ON e.idExDetento = ed.idExDetento
+            LEFT JOIN tbExperienciasExDetento ex ON e.idExDetento = ex.idExDetento
+            JOIN tbUsuario u ON e.idUsuario = u.idUsuario
+            WHERE (
+            e.nomeExDetento IS NULL
+            OR e.sexoExDetento IS NULL
+            OR e.cpfExDetento IS NULL
+            OR e.dataNascExDetento IS NULL
+            OR e.logradouroExDetento IS NULL
+            OR e.numExDetento IS NULL
+            OR e.cepExDetento IS NULL
+            OR e.bairroExDetento IS NULL
+            OR e.cidadeExDetento IS NULL
+            OR e.estadoExDetento IS NULL
+            OR f.numFoneExDetento IS NULL
+            OR ed.nomeEscola IS NULL
+            OR ex.nomeEmpresaExpericencia IS NULL
+            )
+            AND u.usuario = '${usuario}';
+            `)
+
+            if (resultado.length > 0) {
+                return res.json({ completo: false })
+            } else {
+                return res.json({ completo: true})
+            }
+        } catch(erro) {
+            res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
+        }
     })
 
 
