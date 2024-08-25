@@ -628,7 +628,7 @@ router.route("/usuario/cnpj/:cnpj").get(async (req, res) => {
 
     try {
         const resposta = await query(
-            `SELECT usuario FROM tbUsuario JOIN tbEmpresa ON tbEmpresa.idUsuario = tbUsuario.idUsuario WHERE cnpj = '${cnpj}'`
+            `SELECT usuario FROM tbUsuario JOIN tbEmpresa ON tbEmpresa.idUsuario = tbUsuario.idUsuario WHERE cnpjEmpresa = '${cnpj}'`
         );
 
         if (resposta.length == 0) {
