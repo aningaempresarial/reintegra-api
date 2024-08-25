@@ -619,7 +619,7 @@ router.route("/telefone/:usuario/:id").delete(async (req, res) => {
     }
 });
 
-router.route("usuario/cnpj/:cnpj").get(async (req, res) => {
+router.route("/usuario/cnpj/:cnpj").get(async (req, res) => {
     const cnpj = req.params.cnpj || undefined;
 
     if (typeof cnpj == "undefined") {
