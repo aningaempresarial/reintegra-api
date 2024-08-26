@@ -193,7 +193,7 @@ router
             if (typeof emailContato == "string") {
                 if (validaEmail(emailContato)) {
                     const buscaEmail = await query(
-                        `SELECT emailEmpresaContato FROM tbEmpresa WHERE emailEmpresaContato = '${emailAtualizado}'`
+                        `SELECT emailEmpresaContato FROM tbEmpresa WHERE emailEmpresaContato = '${emailContatoAtualizado}'`
                     );
                     if (buscaEmail.length == 0) {
                         emailContatoAtualizado = emailContato;
