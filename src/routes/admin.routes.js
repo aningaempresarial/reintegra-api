@@ -17,12 +17,12 @@ router.route('/getdata')
 
 
         try {
-            const user = getUser(token);
+            const user = await getUser(token);
 
             if (user[0]) {
                 const usuario = user[1];
-                const consulta = await query(`SELECT * FROM tbAdmin WHERE idUsuario = ${usuario.id}`);
-                return consulta;
+                const consulta = await query(`SELECT * FROM tbAdmin WHERE idUsuario = ${usuario.idUsuario}`);
+                return res.json(consulta[0]);
             } else {
                 return res.status(404).json({ erro: 'Usuario não encontrado.' })
             }
