@@ -33,7 +33,7 @@ router.route('/')
                     tbEmpresa emp ON u.idUsuario = emp.idUsuario
                 LEFT JOIN
                     tbEscola esc ON u.idUsuario = esc.idUsuario
-                WHERE 1=1
+                WHERE statusEntidade = 'ativo' OR statusEntidade = 'bloqueado'
             `;
 
             if (nome) {
