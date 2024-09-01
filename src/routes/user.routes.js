@@ -2,6 +2,9 @@ import { Router } from "express";
 import multer from "multer";
 import { query } from '../db/query.js';
 import { login } from "../functions/auth/login.js";
+import { validaSenha } from "../functions/usuario/valida-senha.js";
+import { checkUsernameExists } from "../functions/utils/verifica-usuario.js";
+import { geraHash } from "../functions/usuario/gera-hash.js";
 
 const router = Router();
 const upload = multer();
@@ -109,20 +112,96 @@ router.route('/info/:usuario')
         }
 
     })
+
+router.route('/')
     .put(upload.none(), async (req, res) => {
 
-        const usuario = req.params.usuario || undefined;
+        const {
+            usuario,
+            new_usuario,
+            new_email,
+            senha,
+        } = req.body || {};
 
         if (typeof usuario == 'undefined') {
             return res.status(400).json({ erro: '`usuario` nao é um campo válido.' });
         }
 
+        if (typeof new_usuario == 'undefined') {
+            return res.status(400).json({ erro: '`new_usuario` não é um campo válido.' });
+        }
+        if (typeof new_email == 'undefined') {
+            return res.status(400).json({ erro: '`new_email` não é um campo válido.' });
+        }
+        if (typeof old_senha == 'undefined') {
+            return res.status(400).json({ erro: '`old_senha` não é um campo válido.' });
+        }
+
+        try {
+            const senhValida = await validaSenha(usuario, senha);
+
+            if (validaSenha) {
+
+                const usuarioExiste = await checkUsernameExists(new_usuario);
+
+                if (!usuarioExiste) {
+
+                    const resposta = await query(`UPDATE FROM tbUsuario (usuario, emailUsuario, dataModificacao)
+                        VALUES ('${new_usuario}', '${new_email}', NOW()) WHERE usuario = '${usuario}'`);
+
+                    return res.json({ mensagem: 'Dados atualizados com êxito!' })
+
+                } else {
+                    return res.status(400).json({ erro: 'Usuario já existe.' });
+                }
+
+            } else {
+                return res.status(401).json({ erro: 'Senha inválida' });
+            }
+        } catch (erro) {
+            res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
+        }
+
+    })
+
+router.route('/pass')
+    .put(upload.none(), async (req, res) => {
+
         const {
-            new_usuario,
-            new_email,
-            new_senha,
-            old_senha,
+            usuario,
+            senha,
+            new_senha
         } = req.body || {};
+
+        if (typeof usuario == 'undefined') {
+            return res.status(400).json({ erro: '`usuario` nao é um campo válido.' });
+        }
+
+        if (typeof new_senha == 'undefined') {
+            return res.status(400).json({ erro: '`new_senha` não é um campo válido.' });
+        }
+        if (typeof senha == 'undefined') {
+            return res.status(400).json({ erro: '`senha` não é um campo válido.' });
+        }
+
+        try {
+            const senhValida = await validaSenha(usuario, senha);
+
+            if (validaSenha) {
+
+                const hash = await geraHash(new_senha)
+
+                const resposta = await query(`UPDATE FROM tbUsuario (senhaUsuario, dataModificacao)
+                    VALUES ('${hash}', NOW()) WHERE usuario = '${usuario}'`);
+
+                return res.json({ mensagem: 'Dados atualizados com êxito!' })
+
+            } else {
+                return res.status(401).json({ erro: 'Senha inválida' });
+            }
+        } catch (erro) {
+            res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
+        }
 
     })
 
