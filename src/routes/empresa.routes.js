@@ -379,7 +379,7 @@ router
             cepEnderecoEmpresa = '${cepAtualizado}',
             bairroEnderecoEmpresa = '${bairroAtualizado}',
             estadoEnderecoEmpresa = '${estadoAtualizado}'
-            WHERE idEmpresa = ${idEmpresa}`);
+            WHERE idEmpresa = ${idEmpresa} AND idEnderecoEmpresa = ${id}`);
 
             return res
                 .status(200)
