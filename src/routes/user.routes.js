@@ -113,46 +113,39 @@ router.route('/info/:usuario')
 
     })
 
-router.route('/')
+router.route('/update')
     .put(upload.none(), async (req, res) => {
 
-        const {
-            usuario,
-            new_usuario,
-            new_email,
-            senha,
-        } = req.body || {};
+        const { usuario, new_usuario, new_email, senha } = req.body || {};
 
-        if (typeof usuario == 'undefined') {
+        if (typeof usuario === 'undefined') {
             return res.status(400).json({ erro: '`usuario` nao é um campo válido.' });
         }
-
-        if (typeof new_usuario == 'undefined') {
+        if (typeof new_usuario === 'undefined') {
             return res.status(400).json({ erro: '`new_usuario` não é um campo válido.' });
         }
-        if (typeof new_email == 'undefined') {
+        if (typeof new_email === 'undefined') {
             return res.status(400).json({ erro: '`new_email` não é um campo válido.' });
         }
-        if (typeof old_senha == 'undefined') {
-            return res.status(400).json({ erro: '`old_senha` não é um campo válido.' });
+        if (typeof senha === 'undefined') {
+            return res.status(400).json({ erro: '`senha` não é um campo válido.' });
         }
 
         try {
-            const senhValida = await validaSenha(usuario, senha);
+            const senhaValida = await validaSenha(usuario, senha);
 
-            if (validaSenha) {
+            if (senhaValida) {
+                if (usuario !== new_usuario) {
+                    const usuarioExiste = await checkUsernameExists(new_usuario);
 
-                const usuarioExiste = await checkUsernameExists(new_usuario);
-
-                if (!usuarioExiste) {
-
-                    const resposta = await query(`UPDATE FROM tbUsuario (usuario, emailUsuario, dataModificacao)
-                        VALUES ('${new_usuario}', '${new_email}', NOW()) WHERE usuario = '${usuario}'`);
-
-                    return res.json({ mensagem: 'Dados atualizados com êxito!' })
-
+                    if (!usuarioExiste) {
+                        await query(`UPDATE tbUsuario SET usuario = '${new_usuario}', emailUsuario = '${new_email}', dataModificacao = NOW() WHERE usuario = '${usuario}'`);
+                        return res.json({ mensagem: 'Dados atualizados com êxito!' });
+                    } else {
+                        return res.status(400).json({ erro: 'Usuario já existe.' });
+                    }
                 } else {
-                    return res.status(400).json({ erro: 'Usuario já existe.' });
+                    await query(`UPDATE tbUsuario SET usuario = '${new_usuario}', emailUsuario = '${new_email}', dataModificacao = NOW() WHERE usuario = '${usuario}'`);return res.json({ mensagem: 'Dados atualizados com êxito!' });
                 }
 
             } else {
@@ -162,39 +155,32 @@ router.route('/')
             res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
         }
 
-    })
+    });
 
 router.route('/pass')
     .put(upload.none(), async (req, res) => {
 
-        const {
-            usuario,
-            senha,
-            new_senha
-        } = req.body || {};
+        const { usuario, senha, new_senha } = req.body || {};
 
-        if (typeof usuario == 'undefined') {
+        if (typeof usuario === 'undefined') {
             return res.status(400).json({ erro: '`usuario` nao é um campo válido.' });
         }
-
-        if (typeof new_senha == 'undefined') {
+        if (typeof new_senha === 'undefined') {
             return res.status(400).json({ erro: '`new_senha` não é um campo válido.' });
         }
-        if (typeof senha == 'undefined') {
+        if (typeof senha === 'undefined') {
             return res.status(400).json({ erro: '`senha` não é um campo válido.' });
         }
 
         try {
-            const senhValida = await validaSenha(usuario, senha);
+            const senhaValida = await validaSenha(usuario, senha);
 
-            if (validaSenha) {
+            if (senhaValida) {
+                const hash = await geraHash(new_senha);
 
-                const hash = await geraHash(new_senha)
+                await query(`UPDATE tbUsuario SET senhaUsuario = '${hash}', dataModificacao = NOW() WHERE usuario = '${usuario}'`);
 
-                const resposta = await query(`UPDATE FROM tbUsuario (senhaUsuario, dataModificacao)
-                    VALUES ('${hash}', NOW()) WHERE usuario = '${usuario}'`);
-
-                return res.json({ mensagem: 'Dados atualizados com êxito!' })
+                return res.json({ mensagem: 'Dados atualizados com êxito!' });
 
             } else {
                 return res.status(401).json({ erro: 'Senha inválida' });
@@ -203,6 +189,7 @@ router.route('/pass')
             res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
         }
 
-    })
+    });
+
 
 export default router;
