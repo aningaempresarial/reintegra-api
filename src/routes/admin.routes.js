@@ -21,7 +21,7 @@ router.route('/getdata')
 
             if (user[0]) {
                 const usuario = user[1];
-                const consulta = await query(`SELECT usuario, nomeAdmin  FROM tbAdmin JOIN tbUsuario WHERE tbAdmin.idUsuario = tbUsuario.idUsuario WHERE idUsuario = ${usuario.idUsuario}`);
+                const consulta = await query(`SELECT usuario, nomeAdmin FROM tbAdmin JOIN tbUsuario ON tbAdmin.idUsuario = tbUsuario.idUsuario WHERE tbUsuario.idUsuario = ${usuario.idUsuario}`);
                 return res.json(consulta[0]);
             } else {
                 return res.status(404).json({ erro: 'Usuario não encontrado.' })
