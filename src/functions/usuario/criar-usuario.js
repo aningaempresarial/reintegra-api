@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { query } from "../../db/query.js";
 import { geraHash } from "./gera-hash.js";
 import { verificaEmailExiste } from "./verifica-email.js";
+import { criarPerfil } from "../perfil/criar-perfil.js";
 
 export function criarUsuario(nome, email, senha, tipo) {
     // a função retorna um vetor. a primeira posição é "true" ou "false" (true é se o usuario for criado com êxito)
@@ -40,6 +41,8 @@ export function criarUsuario(nome, email, senha, tipo) {
                     );
 
                     const userId = insertResult.insertId;
+
+                    await criarPerfil(userId, tipo);
 
                     resolve([true, userId]);
                 } catch (error) {
