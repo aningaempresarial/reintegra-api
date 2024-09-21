@@ -105,7 +105,7 @@ router.route('/')
             // Criação de Usuario
             const usuario = await criarUsuario(nome, email, senha, 3);
 
-            // Se o usuário foi criado, criar a empresa e registrar no banco
+            // Se o usuário foi criado, criar o ex-detento e registrar no banco
             if (usuario[0]) {
                 const consulta = await query(`INSERT INTO tbExDetento (nomeExDetento, cpfExDetento, dataNascExDetento, logradouroExDetento, numExDetento, cepExDetento, bairroExDetento, cidadeExDetento, estadoExDetento, idUsuario) VALUES ('${nome}', '${cpf}', '${dataNasc}', '${logradouro}', '${num}', '${cep}', '${bairro}', '${cidade}', '${estado}', ${usuario[1]})`)
 

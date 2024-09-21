@@ -109,7 +109,7 @@ router
         try {
             const resultado = await query(`
                 SELECT tbEmpresa.idEmpresa, nomeEmpresa, emailEmpresaContato, cnpjEmpresa, usuario
-                FROM tbEmpresa
+                FROM tbEmpresa 
                 JOIN tbUsuario ON tbUsuario.idUsuario = tbEmpresa.idUsuario
                 WHERE statusEntidade = 'ativo' AND usuario = '${usuario}'
             `);

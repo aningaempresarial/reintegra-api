@@ -18,6 +18,8 @@ import adminRoutes from './routes/admin.routes.js';
 import exDetentoRoutes from './routes/ex-detento.routes.js';
 import userRoutes from './routes/user.routes.js';
 import sspRoutes from './routes/ssp.routes.js';
+import ongRoutes from './routes/ong.routes.js';
+
 
 
 export class App {
@@ -64,6 +66,7 @@ export class App {
         this.app.use('/admin/usuario', adminUsuarioRoutes);
         this.app.use('/exDetento', exDetentoRoutes);
         this.app.use('/admin', adminRoutes);
+        this.app.use('/ong', ongRoutes);
     }
 
 }
