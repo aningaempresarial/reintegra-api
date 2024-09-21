@@ -25,7 +25,7 @@ export function criarPastaUsuario(id, tipoEntidade) {
 
         fs.copyFileSync(bannerPadrao, caminhoBannerUsuario);
 
-        return [caminhoFotoUsuario, caminhoBannerUsuario];
+        return [`/public/profiles/${id}/foto.jpg`, `/public/profiles/${id}/banner.jpg`];
 
     } catch (error) {
         console.error('Erro ao criar a pasta do usuário:', error);

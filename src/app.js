@@ -17,6 +17,7 @@ import adminUsuarioRoutes from './routes/admin-usuario.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import exDetentoRoutes from './routes/ex-detento.routes.js';
 import userRoutes from './routes/user.routes.js';
+import perfilRoutes from './routes/perfil.routes.js';
 import sspRoutes from './routes/ssp.routes.js';
 
 
@@ -60,6 +61,7 @@ export class App {
 
         this.app.use('/', indexRoutes);
         this.app.use('/user', userRoutes);
+        this.app.use('/perfil', perfilRoutes);
         this.app.use('/empresa', empresaRoutes);
         this.app.use('/admin/usuario', adminUsuarioRoutes);
         this.app.use('/exDetento', exDetentoRoutes);
