@@ -123,11 +123,11 @@ router
             const telefones = await query(`
                 SELECT idFoneOng, numFoneOng, visibilidade
                 FROM tbFoneOng
-                WHERE idOng = ${ong.idONg}
+                WHERE idOng = ${ong.idOng}
             `);
 
             const enderecos = await query(`
-                SELECT idEndereOng, logradouroEnderecoOng, numEnderecoOng, cepEnderecoOng, bairroEnderecoOng, estadoEnderecoOng
+                SELECT idEnderecoOng, logradouroEnderecoOng, numEnderecoOng, cepEnderecoOng, bairroEnderecoOng, estadoEnderecoOng
                 FROM tbEnderecoOng
                 WHERE idOng = ${ong.idOng}
             `);
@@ -186,13 +186,12 @@ router
             // Precisamos checar se os dados passados são válidos
 
             let nomeAtualizado = nome || ongAtual.nomeOng;
-
-            let emailContatoAtualizado = ongAtual.emailOngContato;
+            let emailContatoAtualizado = emailContato || ongAtual.emailOngContato;
+            
             if (typeof emailContato == "string") {
                 if (validaEmail(emailContato)) {
                     const buscaEmail = await query(
-                        `SELECT emailOngContato FROM tbOng WHERE emailOngContato = '${emailContatoAtualizado}'`
-                    );
+                        `SELECT emailOngContato FROM tbOng WHERE emailOngContato = '${emailContato}'`);
                     if (buscaEmail.length == 0) {
                         emailContatoAtualizado = emailContato;
                     }
@@ -205,11 +204,7 @@ router
                 JOIN tbUsuario ON tbUsuario.idUsuario = tbOng.idUsuario
                 SET
                     tbOng.nomeOng = '${nomeAtualizado}',
-                    tbOng.emailOngContato = ${
-                        emailContatoAtualizado !== null
-                            ? `'${emailContatoAtualizado}'`
-                            : "NULL"
-                    }
+                    tbOng.emailOngContato = '${emailContatoAtualizado}'
                 WHERE
                     tbUsuario.usuario = '${usuario}'
             `);
@@ -275,7 +270,7 @@ router
             }
 
             const resultado = await query(
-                `SELECT idONg FROM tbOng JOIN tbUsuario ON tbOng.idUsuario = tbUsuario.idUsuario WHERE tbUsuario.usuario = '${usuario}'`
+                `SELECT idOng FROM tbOng JOIN tbUsuario ON tbOng.idUsuario = tbUsuario.idUsuario WHERE tbUsuario.usuario = '${usuario}'`
             );
             const idOng = resultado[0].idOng;
 
@@ -407,7 +402,7 @@ router.route("/endereco/:usuario/:id").delete(async (req, res) => {
 
     try {
         const resultado = await query(`
-                SELECT tbOng;.idOng
+                SELECT tbOng.idOng
                 FROM tbOng
                 JOIN tbUsuario ON tbOng.idUsuario = tbUsuario.idUsuario
                 WHERE tbUsuario.usuario = '${usuario}'
@@ -464,7 +459,7 @@ router
             // Verifica se o telefone existe
             const telefoneAtual = await query(`
                 SELECT *
-                FROM tbFonOng
+                FROM tbFoneOng
                 WHERE numFoneOng = '${numero}'
             `);
 
