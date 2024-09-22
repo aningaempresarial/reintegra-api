@@ -238,7 +238,7 @@ router
                 .json({ erro: "`usuario` nao é um campo válido." });
         }
 
-        const { logradouro, numero, cep, bairro, estado } = req.body || {};
+        const { logradouro, numero, cep, bairro, cidade, estado } = req.body || {};
 
         if (!validaLogradouro(logradouro)) {
             return res
@@ -264,6 +264,12 @@ router
                 .json({ erro: "`bairro` não é um campo válido." });
         }
 
+        if (!validaLogradouro(cidade)) {
+            return res
+                .status(400)
+                .json({ erro: "`cidade` não é um campo válido." });
+        }
+
         if (!validaEstado(estado)) {
             return res
                 .status(400)
@@ -282,8 +288,8 @@ router
             const idEmpresa = resultado[0].idEmpresa;
 
             await query(`
-            INSERT INTO tbEnderecoEmpresa (logradouroEnderecoEmpresa, numEnderecoEmpresa, cepEnderecoEmpresa, bairroEnderecoEmpresa, estadoEnderecoEmpresa, idEmpresa)
-            VALUES ('${logradouro}', '${numero}', '${cep}', '${bairro}', '${estado}', ${idEmpresa})`);
+            INSERT INTO tbEnderecoEmpresa (logradouroEnderecoEmpresa, numEnderecoEmpresa, cepEnderecoEmpresa, bairroEnderecoEmpresa, cidadeEnderecoEmpresa, estadoEnderecoEmpresa, idEmpresa)
+            VALUES ('${logradouro}', '${numero}', '${cep}', '${bairro}', '${cidade}', '${estado}', ${idEmpresa})`);
 
             res.status(201).json({
                 mensagem: "Endereço cadastrado com sucesso.",
@@ -305,7 +311,7 @@ router
                 .json({ erro: "`usuario` nao é um campo válido." });
         }
 
-        const { id, logradouro, numero, cep, bairro, estado } = req.body || {};
+        const { id, logradouro, numero, cep, bairro, cidade, estado } = req.body || {};
 
         if (!id) {
             return res
@@ -378,7 +384,8 @@ router
             numEnderecoEmpresa = '${numeroAtualizado}',
             cepEnderecoEmpresa = '${cepAtualizado}',
             bairroEnderecoEmpresa = '${bairroAtualizado}',
-            estadoEnderecoEmpresa = '${estadoAtualizado}'
+            estadoEnderecoEmpresa = '${estadoAtualizado}',
+            cidadeEnderecoEmpresa = '${cidade}'
             WHERE idEmpresa = ${idEmpresa} AND idEnderecoEmpresa = ${id}`);
 
             return res
@@ -643,5 +650,18 @@ router.route("/usuario/cnpj/:cnpj").get(async (req, res) => {
         });
     }
 });
+
+router.route('/area-atuacao/get')
+    .get(async (req, res) => {
+        try {
+            const response = await query("SELECT * FROM `tbAreaAtuacaoEmpresa` ORDER BY `tbAreaAtuacaoEmpresa`.`nomeAreaAtuacao` ASC");
+            return res.json({ areas: response })
+        } catch (erro) {
+            res.status(500).json({
+                erro: "Erro ao processar a solicitação.",
+                detalhe: erro.message,
+            });
+        }
+    })
 
 export default router;

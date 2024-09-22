@@ -23,6 +23,33 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+
+router.route("/usuario/desc/:usuario")
+    .put(upload.none(), async (req, res) => {
+
+        try {
+            const nomeUsuario = req.params.usuario;
+
+            const { descricao } = req.body;
+
+            const result = await query(`SELECT idPerfil FROM tbPerfil JOIN tbUsuario ON tbPerfil.idUsuario = tbUsuario.idUsuario WHERE usuario = '${nomeUsuario}'`);
+
+            if (result.length === 0) {
+                return res.status(404).json({ error: 'Usuário não encontrado' });
+            }
+
+            const usuarioId = result[0].idPerfil;
+
+            await query(`UPDATE tbPerfil SET descricaoPerfil = '${descricao}' WHERE idPerfil = ${usuarioId}`);
+
+            res.json({ message: 'Descrição atualizada com êxito!' });
+        } catch (error) {
+            console.error('Erro ao buscar o usuário:', error);
+            return res.status(500).json({ erro: 'Erro ao buscar o usuário' });
+        }
+
+    });
+
 router.route('/usuario/:usuario')
     .put(async (req, res, next) => {
         try {
@@ -42,7 +69,7 @@ router.route('/usuario/:usuario')
 
         } catch (error) {
             console.error('Erro ao buscar o usuário:', error);
-            return res.status(500).json({ error: 'Erro ao buscar o usuário' });
+            return res.status(500).json({ erro: 'Erro ao buscar o usuário' });
         }
     }, upload.fields([
         { name: 'foto', maxCount: 1 },
@@ -56,7 +83,7 @@ router.route('/usuario/:usuario')
             res.json({ message: 'Imagens recebidas e salvas com sucesso!' });
         } catch (error) {
             console.error('Erro ao salvar as imagens:', error);
-            res.status(500).json({ error: 'Erro ao salvar as imagens' });
+            res.status(500).json({ erro: 'Erro ao salvar as imagens' });
         }
     });
 
