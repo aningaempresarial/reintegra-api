@@ -5,6 +5,9 @@ import { login } from "../functions/auth/login.js";
 import { validaSenha } from "../functions/usuario/valida-senha.js";
 import { checkUsernameExists } from "../functions/utils/verifica-usuario.js";
 import { geraHash } from "../functions/usuario/gera-hash.js";
+import { verificaCnpjExiste } from "../functions/empresa/verifica-cnpj.js";
+import { validaCNPJ } from "../functions/empresa/valida-cnpj.js";
+import { validaEmail } from "../functions/utils/valida-email.js";
 
 const router = Router();
 const upload = multer();
@@ -106,7 +109,7 @@ router.route("/info/:usuario").get(async (req, res) => {
 
     try {
         const resposta = await query(
-            `SELECT usuario, emailUsuario FROM tbUsuario WHERE usuario = '${usuario}'`
+            `SELECT usuario, emailUsuario, fotoPerfil, bannerPerfil, descricaoPerfil FROM tbUsuario JOIN tbPerfil ON tbPerfil.idUsuario = tbUsuario.idUsuario WHERE usuario = '${usuario}'`
         );
 
         if (resposta.length == 0) {
@@ -243,5 +246,69 @@ router.route("/inativar/:usuario").put(async (req, res) => {
         });
     }
 });
+
+
+router.route('/verificar/cnpj/:cnpj')
+    .get(async (req, res) => {
+        const cnpj = req.params.cnpj || undefined;
+
+        if (typeof cnpj == "undefined") {
+            return res
+                .status(400)
+                .json({ erro: "`cnpj` não é um campo válido." });
+        }
+
+        if (!validaCNPJ(cnpj)) {
+            return res.status(200).json({ existe: true, mensagem: 'CNPJ inválido.' });
+        }
+
+        try {
+            const resultadoEmpresa = await query(`SELECT COUNT(*) AS count FROM tbEmpresa WHERE cnpjEmpresa = '${cnpj}'`);
+            const resultadoOng = await query(`SELECT COUNT(*) AS count FROM tbOng WHERE cnpjOng = '${cnpj}'`);
+
+            if (resultadoEmpresa[0].count > 0 || resultadoOng[0].count > 0) {
+                return res.status(200).json({ existe: true, mensagem: 'CNPJ já foi cadastrado. Tente recuperar a senha!' });
+            } else {
+                return res.status(200).json({ existe: false, mensagem: 'CNPJ disponível para uso.' });
+            }
+
+        } catch (erro) {
+            res.status(500).json({
+                erro: "Erro ao processar a solicitação.",
+                detalhe: erro.message,
+            });
+        }
+    })
+
+router.route('/verificar/email/:email')
+    .get(async (req, res) => {
+        const email = req.params.email || undefined;
+
+        if (typeof email == "undefined") {
+            return res
+                .status(400)
+                .json({ erro: "`email` não é um campo válido." });
+        }
+
+        if (!validaEmail(email)) {
+            return res.status(200).json({ existe: true, mensagem: 'Email inválido.' });
+        }
+
+        try {
+            const resultado = await query(`SELECT COUNT(*) AS count FROM tbUsuario WHERE emailUsuario = '${email}'`);
+
+            if (resultado[0].count > 0) {
+                return res.status(200).json({ existe: true, mensagem: 'Email já foi cadastrado. Tente recuperar a senha!' });
+            } else {
+                return res.status(200).json({ existe: false, mensagem: 'Email disponível para uso.' });
+            }
+
+        } catch (erro) {
+            res.status(500).json({
+                erro: "Erro ao processar a solicitação.",
+                detalhe: erro.message,
+            });
+        }
+    })
 
 export default router;
