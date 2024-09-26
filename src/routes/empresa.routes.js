@@ -17,6 +17,7 @@ import {
 } from "../functions/utils/valida-endereco.js";
 import { checkUsernameExists } from "../functions/utils/verifica-usuario.js";
 import { validaTelefone } from "../functions/utils/valida-telefone.js";
+import { buscaDadosCep } from "../functions/endereco/busca-dados-cep.js";
 
 const router = Router();
 const upload = multer();
@@ -46,7 +47,7 @@ router.route("/").get(async (req, res) => {
 });
 
 router.route("/").post(upload.none(), async (req, res) => {
-    const { nome, email, cnpj, senha } = req.body || {};
+    const { nome, email, cnpj, atuacao, senha } = req.body || {};
 
     // Verificações de Existência de Conteúdo
 
@@ -61,6 +62,11 @@ router.route("/").post(upload.none(), async (req, res) => {
     if (!validaEmail(email)) {
         return res.status(400).json({ erro: "`email` não é um campo válido." });
     }
+
+    if (typeof atuacao != "string") {
+        return res.status(400).json({ erro: "`atuacao` não é um campo válido." });
+    }
+
 
     if (typeof senha != "string") {
         return res.status(400).json({ erro: "`senha` não é um campo válido." });
@@ -78,18 +84,18 @@ router.route("/").post(upload.none(), async (req, res) => {
         // Se o usuário foi criado, criar a empresa e registrar no banco
         if (usuario[0]) {
             const consulta = await query(
-                `INSERT INTO tbEmpresa (nomeEmpresa, cnpjEmpresa, idUsuario) VALUES ('${nome}', '${String(
+                `INSERT INTO tbEmpresa (nomeEmpresa, cnpjEmpresa, idAreaAtuacaoEmpresa, idUsuario) VALUES ('${nome}', '${String(
                     cnpj
-                ).replace(/[^\d]/g, "")}', ${usuario[1]}) `
+                ).replace(/[^\d]/g, "")}', ${atuacao}, ${usuario[1]})`
             );
 
-            return res.status(201).json({ mensagem: "Login" });
+            return res.status(201).json({ mensagem: "Empresa registrada com êxito.", usuario: usuario[2], perfil: usuario[3] });
         } else {
-            return res.status(400).json({ erro: "Erro ao criar usuário." });
+            return res.status(400).json({ erro: "Erro ao registrar Empresa." });
         }
     } catch (erro) {
         res.status(500).json({
-            erro: "Erro ao processar a solicitação.",
+            erro: "Erro inesperado.",
             detalhe: erro.message,
         });
     }
@@ -108,9 +114,11 @@ router
 
         try {
             const resultado = await query(`
-                SELECT tbEmpresa.idEmpresa, nomeEmpresa, emailEmpresaContato, cnpjEmpresa, usuario
-                FROM tbEmpresa 
+                SELECT tbEmpresa.idEmpresa, nomeEmpresa, emailEmpresaContato, cnpjEmpresa, usuario, emailUsuario, fotoPerfil, bannerPerfil, descricaoPerfil, nomeAreaAtuacao
+                FROM tbEmpresa
                 JOIN tbUsuario ON tbUsuario.idUsuario = tbEmpresa.idUsuario
+                JOIN tbPerfil ON tbUsuario.idUsuario = tbPerfil.idUsuario
+                JOIN tbAreaAtuacaoEmpresa ON tbEmpresa.idAreaAtuacaoEmpresa = tbAreaAtuacaoEmpresa.idAreaAtuacao
                 WHERE statusEntidade = 'ativo' AND usuario = '${usuario}'
             `);
 
@@ -129,7 +137,7 @@ router
             `);
 
             const enderecos = await query(`
-                SELECT idEnderecoEmpresa, logradouroEnderecoEmpresa, numEnderecoEmpresa, cepEnderecoEmpresa, bairroEnderecoEmpresa, estadoEnderecoEmpresa
+                SELECT idEnderecoEmpresa, logradouroEnderecoEmpresa, numEnderecoEmpresa, complementoEnderecoEmpresa, cepEnderecoEmpresa, bairroEnderecoEmpresa, cidadeEnderecoEmpresa, estadoEnderecoEmpresa, latitudeEnderecoEmpresa, longitudeEnderecoEmpresa
                 FROM tbEnderecoEmpresa
                 WHERE idEmpresa = ${empresa.idEmpresa}
             `);
@@ -238,7 +246,7 @@ router
                 .json({ erro: "`usuario` nao é um campo válido." });
         }
 
-        const { logradouro, numero, cep, bairro, cidade, estado } = req.body || {};
+        const { logradouro, numero, complemento, cep, bairro, cidade, estado } = req.body || {};
 
         if (!validaLogradouro(logradouro)) {
             return res
@@ -287,9 +295,21 @@ router
             );
             const idEmpresa = resultado[0].idEmpresa;
 
-            await query(`
-            INSERT INTO tbEnderecoEmpresa (logradouroEnderecoEmpresa, numEnderecoEmpresa, cepEnderecoEmpresa, bairroEnderecoEmpresa, cidadeEnderecoEmpresa, estadoEnderecoEmpresa, idEmpresa)
-            VALUES ('${logradouro}', '${numero}', '${cep}', '${bairro}', '${cidade}', '${estado}', ${idEmpresa})`);
+            const dados = await buscaDadosCep(cep.replace('-', ''));
+
+            if (dados[0]) {
+                const { latitude, longitude } = dados[1];
+
+                await query(`
+                    INSERT INTO tbEnderecoEmpresa (logradouroEnderecoEmpresa, numEnderecoEmpresa, complementoEnderecoEmpresa, cepEnderecoEmpresa, bairroEnderecoEmpresa, cidadeEnderecoEmpresa, estadoEnderecoEmpresa, idEmpresa, latitudeEnderecoEmpresa, longitudeEnderecoEmpresa)
+                    VALUES ('${logradouro}', '${numero}', '${complemento}', '${cep}', '${bairro}', '${cidade}', '${estado}', ${idEmpresa}, '${latitude}', '${longitude}')`);
+            } else {
+                await query(`
+                    INSERT INTO tbEnderecoEmpresa (logradouroEnderecoEmpresa, numEnderecoEmpresa, complementoEnderecoEmpresa, cepEnderecoEmpresa, bairroEnderecoEmpresa, cidadeEnderecoEmpresa, estadoEnderecoEmpresa, idEmpresa)
+                    VALUES ('${logradouro}', '${numero}', '${complemento}', '${cep}', '${bairro}', '${cidade}', '${estado}', ${idEmpresa})`);
+            }
+
+
 
             res.status(201).json({
                 mensagem: "Endereço cadastrado com sucesso.",
@@ -311,7 +331,7 @@ router
                 .json({ erro: "`usuario` nao é um campo válido." });
         }
 
-        const { id, logradouro, numero, cep, bairro, cidade, estado } = req.body || {};
+        const { id, logradouro, numero, complemento, cep, bairro, cidade, estado } = req.body || {};
 
         if (!id) {
             return res
@@ -377,16 +397,40 @@ router
                 estadoAtualizado = estado;
             }
 
+
+
+            const dados = await buscaDadosCep(cepAtualizado.replace('-', ''));
+
             // Passo 4 - Inserir dados no banco
 
-            await query(`UPDATE tbEnderecoEmpresa SET
-            logradouroEnderecoEmpresa = '${logradouroAtualizado}',
-            numEnderecoEmpresa = '${numeroAtualizado}',
-            cepEnderecoEmpresa = '${cepAtualizado}',
-            bairroEnderecoEmpresa = '${bairroAtualizado}',
-            estadoEnderecoEmpresa = '${estadoAtualizado}',
-            cidadeEnderecoEmpresa = '${cidade}'
-            WHERE idEmpresa = ${idEmpresa} AND idEnderecoEmpresa = ${id}`);
+            if (dados[0]) {
+
+                const { latitude, longitude } = dados[1];
+
+                await query(`UPDATE tbEnderecoEmpresa SET
+                    logradouroEnderecoEmpresa = '${logradouroAtualizado}',
+                    numEnderecoEmpresa = '${numeroAtualizado}',
+                    cepEnderecoEmpresa = '${cepAtualizado}',
+                    bairroEnderecoEmpresa = '${bairroAtualizado}',
+                    estadoEnderecoEmpresa = '${estadoAtualizado}',
+                    cidadeEnderecoEmpresa = '${cidade}',
+                    complementoEnderecoEmpresa = '${complemento}',
+                    latitudeEnderecoEmpresa = '${latitude}',
+                    longitudeEnderecoEmpresa = '${longitude}'
+                    WHERE idEmpresa = ${idEmpresa} AND idEnderecoEmpresa = ${id}`);
+            } else {
+                await query(`UPDATE tbEnderecoEmpresa SET
+                    logradouroEnderecoEmpresa = '${logradouroAtualizado}',
+                    numEnderecoEmpresa = '${numeroAtualizado}',
+                    cepEnderecoEmpresa = '${cepAtualizado}',
+                    bairroEnderecoEmpresa = '${bairroAtualizado}',
+                    estadoEnderecoEmpresa = '${estadoAtualizado}',
+                    cidadeEnderecoEmpresa = '${cidade}',
+                    complementoEnderecoEmpresa = '${complemento}'
+                    WHERE idEmpresa = ${idEmpresa} AND idEnderecoEmpresa = ${id}`);
+            }
+
+
 
             return res
                 .status(200)

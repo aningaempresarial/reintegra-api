@@ -18,11 +18,11 @@ export function criarPerfil(id, tipoEntidade) {
             } else {
 
                 await query(`UPDATE tbPerfil SET fotoPerfil	= '${fotos[0]}', bannerPerfil = '${fotos[1]}' WHERE idPerfil = ${idPerfil}`);
-                resolve(true);
+                resolve([true, idPerfil]);
             }
 
         } catch (error) {
-            reject(false);
+            reject([false]);
         }
 
     })

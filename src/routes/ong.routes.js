@@ -71,7 +71,7 @@ router.route("/").post(upload.none(), async (req, res) => {
         }
 
         // Criação de Usuario
-        const usuario = await criarUsuario(nome, email, senha, 0);
+        const usuario = await criarUsuario(nome, email, senha, 1);
 
         // Se o usuário foi criado, criar a ONG e registrar no banco
         if (usuario[0]) {
@@ -81,9 +81,9 @@ router.route("/").post(upload.none(), async (req, res) => {
                 ).replace(/[^\d]/g, "")}', ${usuario[1]}) `
             );
 
-            return res.status(201).json({ mensagem: "Login" });
+            return res.status(201).json({ mensagem: "Ong registrada com êxito.", usuario: usuario[2], perfil: usuario[3] });
         } else {
-            return res.status(400).json({ erro: "Erro ao criar usuário." });
+            return res.status(400).json({ erro: "Erro ao registrar Ong." });
         }
     } catch (erro) {
         res.status(500).json({
@@ -107,7 +107,7 @@ router
         try {
             const resultado = await query(`
                 SELECT tbOng.idOng, nomeOng, emailOngContato, cnpjOng, usuario
-                FROM tbOng 
+                FROM tbOng
                 JOIN tbUsuario ON tbUsuario.idUsuario = tbOng.idUsuario
                 WHERE statusEntidade = 'ativo' AND usuario = '${usuario}'
             `);
@@ -187,7 +187,7 @@ router
 
             let nomeAtualizado = nome || ongAtual.nomeOng;
             let emailContatoAtualizado = emailContato || ongAtual.emailOngContato;
-            
+
             if (typeof emailContato == "string") {
                 if (validaEmail(emailContato)) {
                     const buscaEmail = await query(
@@ -231,7 +231,7 @@ router
                 .json({ erro: "`usuario` nao é um campo válido." });
         }
 
-        const { logradouro, numero, cep, bairro, estado } = req.body || {};
+        const { logradouro, numero, complemento, cep, bairro, cidade, estado } = req.body || {};
 
         if (!validaLogradouro(logradouro)) {
             return res
@@ -257,6 +257,12 @@ router
                 .json({ erro: "`bairro` não é um campo válido." });
         }
 
+        if (!validaLogradouro(cidade)) {
+            return res
+                .status(400)
+                .json({ erro: "`cidade` não é um campo válido." });
+        }
+
         if (!validaEstado(estado)) {
             return res
                 .status(400)
@@ -275,8 +281,8 @@ router
             const idOng = resultado[0].idOng;
 
             await query(`
-            INSERT INTO tbEnderecoOng (logradouroEnderecoOng, numEnderecoOng, cepEnderecoOng, bairroEnderecoOng, estadoEnderecoOng, idOng)
-            VALUES ('${logradouro}', '${numero}', '${cep}', '${bairro}', '${estado}', ${idOng})`);
+            INSERT INTO tbEnderecoOng (logradouroEnderecoOng, numEnderecoOng, complementoEnderecoOng, cepEnderecoOng, bairroEnderecoOng, cidadeEnderecoOng, estadoEnderecoOng, idOng)
+            VALUES ('${logradouro}', '${numero}', ${complemento}, '${cep}', '${bairro}', '${cidade}', '${estado}', ${idOng})`);
 
             res.status(201).json({
                 mensagem: "Endereço cadastrado com sucesso.",
@@ -298,7 +304,7 @@ router
                 .json({ erro: "`usuario` nao é um campo válido." });
         }
 
-        const { id, logradouro, numero, cep, bairro, estado } = req.body || {};
+        const { id, logradouro, numero, complemento, cep, bairro, cidade, estado } = req.body || {};
 
         if (!id) {
             return res
@@ -371,6 +377,8 @@ router
             numEnderecoOng = '${numeroAtualizado}',
             cepEnderecoOng = '${cepAtualizado}',
             bairroEnderecoOng = '${bairroAtualizado}',
+            complementoEnderecoOng = '${complemento}',
+            cidadeEnderecoOng = '${cidade}',
             estadoEnderecoOng = '${estadoAtualizado}'
             WHERE idOng = ${idOng} AND idEnderecoOng = ${id}`);
 

@@ -42,9 +42,13 @@ export function criarUsuario(nome, email, senha, tipo) {
 
                     const userId = insertResult.insertId;
 
-                    await criarPerfil(userId, tipo);
+                    const perfil = await criarPerfil(userId, tipo);
 
-                    resolve([true, userId]);
+                    if (perfil[0]) {
+                        resolve([true, userId, username, perfil[1]]);
+                    } else {
+                        reject(new Error('Erro ao criar perfil.'));
+                    }
                 } catch (error) {
                     reject(error);
                 }
