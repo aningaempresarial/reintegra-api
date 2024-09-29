@@ -27,7 +27,7 @@ router.route('/')
     .get(async (req, res) => {
 
          try {
-            const resultado = await query(`SELECT idExDetento, nomeExDetento, dataNascExDetento, logradouroExDetento, numExDetento, cepExDetento, bairroExDetento, cidadeExDetento, estadoExDetento,tbUsuario.idUsuario, usuario FROM tbExDetento JOIN tbUsuario ON tbUsuario.idUsuario = tbExDetento.idUsuario WHERE statusEntidade = 'ativo'`);
+            const resultado = await query(`SELECT idExDetento, nomeExDetento, dataNascExDetento, logradouroExDetento, numExDetento, cepExDetento, bairroExDetento, cidadeExDetento, estadoExDetento, outrasInformacoesCurriculo,tbUsuario.idUsuario, usuario FROM tbExDetento JOIN tbUsuario ON tbUsuario.idUsuario = tbExDetento.idUsuario WHERE statusEntidade = 'ativo'`);
             res.json(resultado);
          } catch (erro) {
             res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
@@ -37,7 +37,7 @@ router.route('/')
 
 router.route('/simple')
     .post(upload.none(), async (req, res) => {
-        const { nome, cpf, email, sexo, dataNasc, senha } = req.body || {};
+        const { nome, cpf, email, sexo, dataNasc,outrasInformacoesCurriculo, senha } = req.body || {};
 
         if (typeof(nome) != 'string') {
             return res.status(400).json({ erro: '`nome` não é um campo válido.' });
@@ -59,6 +59,10 @@ router.route('/simple')
             return res.status(400).json({ erro: '`dataNasc` não é um campo válido.' });
         }
 
+        if (typeof(outrasInformacoesCurriculo) != 'string') {
+            return res.status(400).json({ erro: '`outrasInformacoesCurriculo` não é um campo válido.' });
+        }
+
         if (typeof(senha) != 'string') {
             return res.status(400).json({ erro: '`senha` não é um campo válido.' });
         }
@@ -69,7 +73,7 @@ router.route('/simple')
 
             // Se o usuário foi criado, criar o exdetento e registrar no banco
             if (usuario[0]) {
-                const consulta = await query(`INSERT INTO tbExDetento (nomeExDetento, cpfExDetento, dataNascExDetento, sexoExDetento, idUsuario) VALUES ('${nome}', '${cpf}', '${dataNasc}', '${sexo}', ${usuario[1]})`)
+                const consulta = await query(`INSERT INTO tbExDetento (nomeExDetento, cpfExDetento, dataNascExDetento, sexoExDetento, outrasInformacoesCurriculo, idUsuario) VALUES ('${nome}', '${cpf}', '${dataNasc}', '${sexo}', '${outrasInformacoesCurriculo}', ${usuario[1]})`)
 
                 return res.status(201).json({ mensagem: 'Login' });
             } else {
@@ -82,32 +86,42 @@ router.route('/simple')
 
     })
 
-router.route('/')
+    router.route('/')
     .post(upload.none(), async (req, res) => {
 
-        const { nome, cpf, email, dataNasc, logradouro, num, cep, bairro, cidade, estado, senha } = req.body || {};
+        const { nome, cpf, email, dataNasc, logradouro, num, cep, bairro, cidade, estado, outrasInformacoesCurriculo, senha } = req.body;
 
         // Verificações de Existência de Conteúdo
-
-        if (typeof(nome) != 'string') {
+        if (typeof(nome) !== 'string') {
             return res.status(400).json({ erro: '`nome` não é um campo válido.' });
         }
 
-        if (typeof(senha) != 'string') {
+        if (typeof(senha) !== 'string') {
             return res.status(400).json({ erro: '`senha` não é um campo válido.' });
         }
 
         // Verificações no Banco
         try {
-            console.log (nome)
-            console.log (senha)
-            //
+            console.log(nome);
+            console.log(senha);
+
             // Criação de Usuario
             const usuario = await criarUsuario(nome, email, senha, 3);
 
             // Se o usuário foi criado, criar o ex-detento e registrar no banco
             if (usuario[0]) {
-                const consulta = await query(`INSERT INTO tbExDetento (nomeExDetento, cpfExDetento, dataNascExDetento, logradouroExDetento, numExDetento, cepExDetento, bairroExDetento, cidadeExDetento, estadoExDetento, idUsuario) VALUES ('${nome}', '${cpf}', '${dataNasc}', '${logradouro}', '${num}', '${cep}', '${bairro}', '${cidade}', '${estado}', ${usuario[1]})`)
+                const consulta = await query(`
+                    INSERT INTO tbExDetento (
+                        nomeExDetento, cpfExDetento, dataNascExDetento, 
+                        logradouroExDetento, numExDetento, cepExDetento, 
+                        bairroExDetento, cidadeExDetento, estadoExDetento, 
+                        outrasInformacoesCurriculo, idUsuario
+                    ) VALUES (
+                        '${nome}', '${cpf}', '${dataNasc}', '${logradouro}', '${num}', 
+                        '${cep}', '${bairro}', '${cidade}', '${estado}', 
+                        '${outrasInformacoesCurriculo}', ${usuario[1]}
+                    )
+                `);
 
                 return res.status(201).json({ mensagem: 'Login' });
             } else {
@@ -118,7 +132,8 @@ router.route('/')
             res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
         }
 
-    })
+    });
+
 
 
 router.route('/:usuario')
@@ -131,7 +146,7 @@ router.route('/:usuario')
 
         try {
             const resultado = await query(`
-                SELECT idExDetento, nomeExDetento, dataNascExDetento, logradouroExDetento, numExDetento, cepExDetento, bairroExDetento, cidadeExDetento, estadoExDetento,
+                SELECT idExDetento, nomeExDetento, dataNascExDetento, logradouroExDetento, numExDetento, cepExDetento, bairroExDetento, cidadeExDetento, estadoExDetento, outrasInformacoesCurriculo,
                 usuario FROM tbExDetento JOIN tbUsuario ON tbUsuario.idUsuario = tbExDetento.idUsuario WHERE statusEntidade = 'ativo' AND usuario = '${usuario}'
             `);
 
@@ -168,6 +183,7 @@ router.route('/:usuario')
 
         const {
             nome,
+            outrasInformacoesCurriculo,
             logradouro,
             num,
             cep,
@@ -211,6 +227,7 @@ router.route('/:usuario')
                 JOIN tbUsuario ON tbUsuario.idUsuario = tbExDetento.idUsuario
                 SET
                     nomeExDetento = '${nomeAtualizado}',
+                    outrasInformacoesCurriculo = '${outrasInformacoesCurriculo}',
                     logradouroExDetento = '${logradouro}',
                     numExDetento = '${num}',
                     cepExDetento = '${cep}',

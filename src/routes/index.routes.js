@@ -8,7 +8,7 @@ const upload = multer();
 router.route('/')
     .get(async (req, res) => {
 
-        res.send('<h1>Exploda mundo!</h1>')
+        res.send('<h1>Amo mundo!</h1>')
     })
     .post(upload.none(), async (req, res) => {
 

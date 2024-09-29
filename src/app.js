@@ -21,7 +21,7 @@ import perfilRoutes from './routes/perfil.routes.js';
 import sspRoutes from './routes/ssp.routes.js';
 import ongRoutes from './routes/ong.routes.js';
 import mensagemRoutes from './routes/mensagem.routes.js';
-
+import curriculo from './routes/info-curriculo.js';
 
 
 export class App {
@@ -70,9 +70,11 @@ export class App {
         this.app.use('/exDetento', exDetentoRoutes);
         this.app.use('/admin', adminRoutes);
         this.app.use('/ong', ongRoutes);
-
+        
 
         this.app.use('/mensagem', mensagemRoutes);
+        this.app.use('/curriculo', curriculo);
+
     }
 
 }
