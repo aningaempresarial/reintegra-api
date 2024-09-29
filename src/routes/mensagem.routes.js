@@ -150,4 +150,48 @@ router.get('/mensagens', async (req, res) => {
     }
 });
 
+router.get('/mensagens/:idUsuario', async (req, res) => {
+    const { token } = req.query;
+    const { idUsuario } = req.params;
+
+    if (!token) {
+        return res.status(400).json({ erro: "`token` não é um campo válido." });
+    }
+
+    try {
+        const user = await getUser(token);
+        const idUsuarioLogado = user[1].idUsuario;
+
+        if (!idUsuario) {
+            return res.status(400).json({ erro: "`ID de usuário` não é um campo válido." });
+        }
+
+        const mensagens = await query(`
+            SELECT
+                m.idMensagem,
+                m.idRemetente,
+                m.idDestinatario,
+                m.conteudoMensagem,
+                m.tipoMensagem,
+                u.usuario
+            FROM
+                tbMensagem m
+            JOIN
+                tbUsuario u ON u.idUsuario = CASE
+                    WHEN m.idRemetente = ${idUsuarioLogado} THEN m.idDestinatario
+                    ELSE m.idRemetente
+                END
+            WHERE
+                (m.idRemetente = ${idUsuarioLogado} AND m.idDestinatario = ${idUsuario})
+                OR (m.idRemetente = ${idUsuario} AND m.idDestinatario = ${idUsuarioLogado})
+            ORDER BY
+                m.idMensagem ASC
+        `);
+
+        res.status(200).json(mensagens);
+    } catch (erro) {
+        res.status(500).json({ erro: "Erro ao processar a solicitação.", detalhe: erro.message });
+    }
+});
+
 export default router;
