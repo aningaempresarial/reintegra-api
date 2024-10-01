@@ -59,10 +59,6 @@ router.route('/simple')
             return res.status(400).json({ erro: '`dataNasc` não é um campo válido.' });
         }
 
-        if (typeof(outrasInformacoesCurriculo) != 'string') {
-            return res.status(400).json({ erro: '`outrasInformacoesCurriculo` não é um campo válido.' });
-        }
-
         if (typeof(senha) != 'string') {
             return res.status(400).json({ erro: '`senha` não é um campo válido.' });
         }
@@ -73,7 +69,7 @@ router.route('/simple')
 
             // Se o usuário foi criado, criar o exdetento e registrar no banco
             if (usuario[0]) {
-                const consulta = await query(`INSERT INTO tbExDetento (nomeExDetento, cpfExDetento, dataNascExDetento, sexoExDetento, outrasInformacoesCurriculo, idUsuario) VALUES ('${nome}', '${cpf}', '${dataNasc}', '${sexo}', '${outrasInformacoesCurriculo}', ${usuario[1]})`)
+                const consulta = await query(`INSERT INTO tbExDetento (nomeExDetento, cpfExDetento, dataNascExDetento, sexoExDetento, idUsuario) VALUES ('${nome}', '${cpf}', '${dataNasc}', '${sexo}', ${usuario[1]})`)
 
                 return res.status(201).json({ mensagem: 'Login' });
             } else {
@@ -112,13 +108,13 @@ router.route('/simple')
             if (usuario[0]) {
                 const consulta = await query(`
                     INSERT INTO tbExDetento (
-                        nomeExDetento, cpfExDetento, dataNascExDetento, 
-                        logradouroExDetento, numExDetento, cepExDetento, 
-                        bairroExDetento, cidadeExDetento, estadoExDetento, 
+                        nomeExDetento, cpfExDetento, dataNascExDetento,
+                        logradouroExDetento, numExDetento, cepExDetento,
+                        bairroExDetento, cidadeExDetento, estadoExDetento,
                         outrasInformacoesCurriculo, idUsuario
                     ) VALUES (
-                        '${nome}', '${cpf}', '${dataNasc}', '${logradouro}', '${num}', 
-                        '${cep}', '${bairro}', '${cidade}', '${estado}', 
+                        '${nome}', '${cpf}', '${dataNasc}', '${logradouro}', '${num}',
+                        '${cep}', '${bairro}', '${cidade}', '${estado}',
                         '${outrasInformacoesCurriculo}', ${usuario[1]}
                     )
                 `);

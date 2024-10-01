@@ -14,15 +14,78 @@ const storage = multer.diskStorage({
         cb(null, path.join(process.cwd(), '/public', 'posts'));
     },
     filename: (req, file, cb) => {
-        const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
+        const uniqueName = `${uuidv4()}.jpg`;
         cb(null, uniqueName);
     }
 });
 
 const upload = multer({ storage });
 
+router.route('/aplicar-vaga')
+    .post(upload.none(), async (req, res) => {
+        const { token, tituloVaga } = req.body || {};
+        try {
+            const usuario = await getUser(token);
+            if (usuario[0]) {
+                const busca = await query(`SELECT idVaga FROM tbVaga WHERE nomeVaga = '${tituloVaga}'`);
+                const buscaExDetento = await query(`SELECT idExDetento FROM tbExDetento JOIN tbUsuario ON tbUsuario.idUsuario = tbExDetento.idUsuario WHERE tbUsuario.idUsuario = ${usuario[1].idUsuario}`)
+                await query(`INSERT INTO tbCandidatoVaga (idExDetento, idVaga) VALUES (${buscaExDetento[0].idExDetento}, ${busca[0].idVaga})`);
+            }
+        } catch (erro) {
+            console.log(erro);
+            res.status(500).json({ erro: "Erro ao processar a solicitação.", detalhe: erro.message });
+        }
 
-router.route('/all/:usuario')
+    })
+
+router.route('/destaques')
+    .get(async (req, res) => {
+        try {
+            const respostaPost = await query(`
+                SELECT
+                    idPostagem, categoriaPostagem, tituloPostagem 'nome', tbPostagem.dataCriacao 'data', imagemPostagem 'imagem' FROM tbPostagem JOIN tbUsuario ON tbUsuario.idUsuario = tbPostagem.idUsuario JOIN tbPerfil ON tbPerfil.idUsuario = tbUsuario.idUsuario
+                ORDER BY
+                    tbPostagem.dataCriacao DESC
+            `);
+            return res.json(respostaPost);
+        } catch (erro) {
+            console.log(erro);
+            res.status(500).json({ erro: "Erro ao processar a solicitação.", detalhe: erro.message });
+        }
+    })
+
+router.route('/all')
+    .get(async (req, res) => {
+        try {
+            const respostaPost = await query(`
+                SELECT
+                    * FROM tbPostagem JOIN tbUsuario ON tbUsuario.idUsuario = tbPostagem.idUsuario JOIN tbPerfil ON tbPerfil.idUsuario = tbUsuario.idUsuario
+                ORDER BY
+                    tbPostagem.dataCriacao DESC
+            `);
+            return res.json(respostaPost);
+        } catch (erro) {
+            console.log(erro);
+            res.status(500).json({ erro: "Erro ao processar a solicitação.", detalhe: erro.message });
+        }
+    })
+
+router.route('/all/emprego')
+    .get(async (req, res) => {
+        try {
+            const respostaPost = await query(`
+                SELECT
+                    * FROM tbPostagem JOIN tbUsuario ON tbUsuario.idUsuario = tbPostagem.idUsuario JOIN tbPerfil ON tbPerfil.idUsuario = tbUsuario.idUsuario
+                ORDER BY
+                    tbPostagem.dataCriacao DESC
+            `);
+            return res.json(respostaPost);
+        } catch (erro) {
+            console.log(erro);
+            res.status(500).json({ erro: "Erro ao processar a solicitação.", detalhe: erro.message });
+        }
+    })
+    router.route('/all/:usuario')
     .get(async (req, res) => {
         const usuario = req.params.usuario || undefined;
 
@@ -55,16 +118,43 @@ router.route('/all/:usuario')
                 JOIN
                     tbUsuario ON tbPostagem.idUsuario = tbUsuario.idUsuario
                 WHERE
-                    usuario = '${usuario}'
+                    tbUsuario.usuario = '${usuario}'
                 ORDER BY
                     tbPostagem.dataCriacao DESC
             `);
-            return res.json(respostaPost);
+
+            const postagensComCandidatos = await Promise.all(respostaPost.map(async postagem => {
+                const candidatos = await query(`
+                    SELECT
+                        tbExDetento.idExDetento,
+                        tbExDetento.nomeExDetento
+                    FROM
+                        tbCandidatoVaga
+                    JOIN
+                        tbExDetento ON tbCandidatoVaga.idExDetento = tbExDetento.idExDetento
+                    JOIN
+                        tbVaga ON tbCandidatoVaga.idVaga = tbVaga.idVaga
+                    WHERE
+                        tbVaga.nomeVaga = '${postagem.tituloPostagem}'
+                `);
+
+                return {
+                    ...postagem,
+                    candidatos: candidatos.map(candidato => ({
+                        idUsuario: candidato.idExDetento,
+                        nome: candidato.nomeExDetento
+                    }))
+                };
+            }));
+
+            return res.json(postagensComCandidatos);
         } catch (erro) {
             console.log(erro);
             res.status(500).json({ erro: "Erro ao processar a solicitação.", detalhe: erro.message });
         }
     });
+
+
 
 router.route('/vaga')
     .post(upload.single('imagem'), async (req, res) => {
@@ -111,6 +201,52 @@ router.route('/vaga')
                 return res.json({ idPost: resPost.insertId, idVaga: resVaga.insertId, imagem: imagemPath });
             } else {
                 res.status(404).json({ erro: 'Empresa não encontrado.' })
+            }
+        } catch (erro) {
+            console.log(erro)
+            res.status(500).json({ erro: "Erro ao processar a solicitação.", detalhe: erro.message });
+        }
+    });
+
+
+router.route('/')
+    .post(upload.single('imagem'), async (req, res) => {
+        const {
+            titulo,
+            descricao,
+            token,
+            tipo
+        } = req.body || {};
+
+        if (!req.file) {
+            return res.status(400).json({ erro: 'Nenhuma imagem enviada.' });
+        }
+
+        if (typeof titulo != "string") {
+            return res.status(400).json({ erro: "`titulo` não é um campo válido." });
+        }
+        if (typeof descricao != "string") {
+            return res.status(400).json({ erro: "`descricao` não é um campo válido." });
+        }
+        if (typeof tipo != "string") {
+            return res.status(400).json({ erro: "`tipo` não é um campo válido." });
+        }
+        if (typeof token != "string") {
+            return res.status(400).json({ erro: "`token` não é um campo válido." });
+        }
+
+        try {
+            const user = await getUser(token);
+
+            if (user[0]) {
+                const usuario = user[1];
+
+
+                const resPost = await query(`INSERT INTO tbPostagem (tituloPostagem, conteudoPostagem, categoriaPostagem, statusPostagem, idUsuario, imagemPostagem) VALUES ('${titulo}', '${descricao}', '${tipo}', 'ativo', ${usuario.idUsuario}, '/public/posts/${req.file.filename}')`);
+
+                return res.json({ idPost: resPost.insertId });
+            } else {
+                res.status(404).json({ erro: 'Usuario não encontrado.' })
             }
         } catch (erro) {
             console.log(erro)
