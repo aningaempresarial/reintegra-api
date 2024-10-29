@@ -161,6 +161,12 @@ router.route('/vaga')
         const {
             titulo,
             descricao,
+            requisitos,
+            salario,
+            tipoContrato,
+            escolaridade,
+            cargaHoraria,
+            horario,
             dtFim,
             token
         } = req.body || {};
@@ -194,13 +200,13 @@ router.route('/vaga')
 
                 const empresa = await query(`SELECT idEmpresa FROM tbEmpresa JOIN tbUsuario ON tbUsuario.idUsuario = tbEmpresa.idUsuario WHERE tbEmpresa.idUsuario = ${usuario.idUsuario}`);
 
-                const resVaga = await query(`INSERT INTO tbVaga (nomeVaga, descricaoVaga, idEmpresa, imagem) VALUES ('${titulo}', '${descricao}', ${empresa[0].idEmpresa}, '/public/posts/${req.file.filename}')`);
+                const resVaga = await query(`INSERT INTO tbVaga (nomeVaga, descricaoVaga, idEmpresa, imagem, requisitosVaga, salarioVaga, tipoContrato, tipoEscolaridade, cargaHoraria, horarioVaga) VALUES ('${titulo}', '${descricao}', ${empresa[0].idEmpresa}, '/public/posts/${req.file.filename}', '${requisitos}', '${salario}', '${tipoContrato}', '${escolaridade}', '${cargaHoraria}', '${horario}')`);
 
                 const imagemPath = `/public/posts/${req.file.filename}`;
 
                 return res.json({ idPost: resPost.insertId, idVaga: resVaga.insertId, imagem: imagemPath });
             } else {
-                res.status(404).json({ erro: 'Empresa não encontrado.' })
+                res.status(404).json({ erro: 'Empresa não encontrada.' })
             }
         } catch (erro) {
             console.log(erro)
