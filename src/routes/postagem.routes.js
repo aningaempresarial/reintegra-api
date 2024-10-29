@@ -59,7 +59,7 @@ router.route('/all')
         try {
             const respostaPost = await query(`
                 SELECT
-                    * FROM tbPostagem JOIN tbUsuario ON tbUsuario.idUsuario = tbPostagem.idUsuario JOIN tbPerfil ON tbPerfil.idUsuario = tbUsuario.idUsuario
+                    tbPostagem.dataCriacao 'dtPostagem', usuario, tbPostagem.*, tbPerfil.*, tbEmpresa.nomeEmpresa FROM tbPostagem JOIN tbUsuario ON tbUsuario.idUsuario = tbPostagem.idUsuario JOIN tbPerfil ON tbPerfil.idUsuario = tbUsuario.idUsuario JOIN tbEmpresa on tbUsuario.idUsuario = tbEmpresa.idUsuario
                 ORDER BY
                     tbPostagem.dataCriacao DESC
             `);
@@ -75,7 +75,7 @@ router.route('/all/emprego')
         try {
             const respostaPost = await query(`
                 SELECT
-                    * FROM tbPostagem JOIN tbUsuario ON tbUsuario.idUsuario = tbPostagem.idUsuario JOIN tbPerfil ON tbPerfil.idUsuario = tbUsuario.idUsuario
+                    tbPostagem.dataCriacao 'dtPostagem', usuario, tbPostagem.*, tbPerfil.* FROM tbPostagem JOIN tbUsuario ON tbUsuario.idUsuario = tbPostagem.idUsuario JOIN tbPerfil ON tbPerfil.idUsuario = tbUsuario.idUsuario
                 ORDER BY
                     tbPostagem.dataCriacao DESC
             `);
@@ -99,6 +99,7 @@ router.route('/all/emprego')
                     tbPostagem.idPostagem,
                     tbPostagem.tituloPostagem,
                     tbPostagem.conteudoPostagem,
+                    tbPostagem.dataCriacao 'dtPostagem',
                     DATE_FORMAT(tbPostagem.dataCriacao, '%d/%m/%Y') AS dataCriacao,
                     DATE_FORMAT(tbPostagem.dataModificacao, '%d/%m/%Y') AS dataModificacao,
                     DATE_FORMAT(tbPostagem.dataFim, '%d/%m/%Y') AS dataFim,
