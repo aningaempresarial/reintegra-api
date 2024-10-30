@@ -261,4 +261,48 @@ router.route('/')
         }
     });
 
+router.route('/vagas/:usuario')
+    .get(async (req, res) => {
+        const { usuario } = req.params;
+
+        if (!usuario) {
+            return res.status(400).json({ erro: "`usuario` não é um campo válido." });
+        }
+
+        try {
+            const resVagas = await query(`
+                SELECT
+                    tbVaga.idVaga,
+                    tbVaga.nomeVaga,
+                    tbVaga.descricaoVaga,
+                    tbVaga.imagem,
+                    tbVaga.requisitosVaga,
+                    tbVaga.salarioVaga,
+                    tbVaga.tipoContrato,
+                    tbVaga.tipoEscolaridade,
+                    tbVaga.cargaHoraria,
+                    tbVaga.horarioVaga,
+                    tbVaga.idPostagem
+                FROM
+                    tbVaga
+                JOIN
+                    tbPostagem ON tbPostagem.idPostagem = tbVaga.idPostagem
+                JOIN
+                    tbUsuario ON tbPostagem.idUsuario = tbUsuario.idUsuario
+                WHERE
+                    tbUsuario.usuario = '${usuario}'
+            `);
+
+            if (resVagas.length === 0) {
+                return res.status(404).json({ erro: "Nenhuma vaga encontrada para esta empresa." });
+            }
+
+            return res.json(resVagas);
+        } catch (erro) {
+            console.log(erro);
+            res.status(500).json({ erro: "Erro ao processar a solicitação.", detalhe: erro.message });
+        }
+    });
+
+
 export default router;
