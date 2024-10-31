@@ -6,6 +6,7 @@ import { criarUsuario } from "../functions/usuario/criar-usuario.js";
 import { validaSenha } from "../functions/usuario/valida-senha.js";
 import { validaTelefone } from "../functions/utils/valida-telefone.js";
 import { checkUsernameExists } from "../functions/utils/verifica-usuario.js";
+import { getUser } from "../functions/auth/login.js";
 
 const router = Router();
 const upload = multer();
@@ -130,6 +131,30 @@ router.route('/simple')
 
     });
 
+
+router.route('/info')
+    .post(upload.none(), async (req, res) => {
+        const { token } = req.body || {};
+
+        try {
+            if (typeof token != 'undefined') {
+                const user = await getUser(token);
+
+                if (user[0]) {
+
+                    const resposta = await query(`SELECT * FROM tbExDetento JOIN tbUsuario ON tbExDetento.idUsuario = tbUsuario.idUsuario JOIN tbPerfil ON tbPerfil.idUsuario = tbUsuario.idUsuario WHERE tbUsuario.idUsuario = ${user[1].idUsuario}`);
+                    return res.json(resposta[0]);
+
+                } else {
+                    res.status(404).json({ erro: 'Usuário não encontrado.', detalhe: erro.message });
+                }
+
+            }
+        } catch (erro) {
+            res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
+        }
+
+    })
 
 
 router.route('/:usuario')
