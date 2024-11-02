@@ -128,13 +128,16 @@ router.route('/all/emprego')
                 const candidatos = await query(`
                     SELECT
                         tbExDetento.idExDetento,
-                        tbExDetento.nomeExDetento
+                        tbExDetento.nomeExDetento,
+                        tbPerfil.fotoPerfil
                     FROM
                         tbCandidatoVaga
                     JOIN
                         tbExDetento ON tbCandidatoVaga.idExDetento = tbExDetento.idExDetento
                     JOIN
                         tbVaga ON tbCandidatoVaga.idVaga = tbVaga.idVaga
+                    JOIN
+                        tbPerfil ON tbExDetento.idUsuario = tbPerfil.idUsuario
                     WHERE
                         tbVaga.nomeVaga = '${postagem.tituloPostagem}'
                 `);
@@ -143,7 +146,8 @@ router.route('/all/emprego')
                     ...postagem,
                     candidatos: candidatos.map(candidato => ({
                         idUsuario: candidato.idExDetento,
-                        nome: candidato.nomeExDetento
+                        nome: candidato.nomeExDetento,
+                        foto: candidato.fotoPerfil
                     }))
                 };
             }));
@@ -183,6 +187,26 @@ router.route('/vaga')
         if (typeof descricao != "string") {
             return res.status(400).json({ erro: "`descricao` não é um campo válido." });
         }
+        if (typeof requisitos != "string") {
+            return res.status(400).json({ erro: "`requisitos` não é um campo válido." });
+        }
+        const salarioDecimal = parseFloat(salario);
+        if (isNaN(salarioDecimal) || salarioDecimal < 0) {
+            return res.status(400).json({ erro: "`salario` não é um número decimal válido." });
+        }
+        if (typeof tipoContrato != "string") {
+            return res.status(400).json({ erro: "`tipoContrato` não é um campo válido." });
+        }
+        if (typeof escolaridade != "string") {
+            return res.status(400).json({ erro: "`escolaridade` não é um campo válido." });
+        }
+        const cargaHorariaInt = parseInt(cargaHoraria, 10);
+        if (isNaN(cargaHorariaInt) || cargaHorariaInt < 0) {
+            return res.status(400).json({ erro: "`cargaHoraria` não é um número inteiro válido." });
+        }
+        if (typeof horario != "string") {
+            return res.status(400).json({ erro: "`horario` não é um campo válido." });
+        }
         if (typeof dtFim != "string") {
             return res.status(400).json({ erro: "`dtFim` não é um campo válido." });
         }
@@ -201,7 +225,7 @@ router.route('/vaga')
 
                 const empresa = await query(`SELECT idEmpresa FROM tbEmpresa JOIN tbUsuario ON tbUsuario.idUsuario = tbEmpresa.idUsuario WHERE tbEmpresa.idUsuario = ${usuario.idUsuario}`);
 
-                const resVaga = await query(`INSERT INTO tbVaga (nomeVaga, descricaoVaga, idEmpresa, imagem, requisitosVaga, salarioVaga, tipoContrato, tipoEscolaridade, cargaHoraria, horarioVaga) VALUES ('${titulo}', '${descricao}', ${empresa[0].idEmpresa}, '/public/posts/${req.file.filename}', '${requisitos}', '${salario}', '${tipoContrato}', '${escolaridade}', '${cargaHoraria}', '${horario}')`);
+                const resVaga = await query(`INSERT INTO tbVaga (nomeVaga, descricaoVaga, idEmpresa, imagem, requisitosVaga, salarioVaga, tipoContrato, tipoEscolaridade, cargaHoraria, horarioVaga, idPostagem) VALUES ('${titulo}', '${descricao}', ${empresa[0].idEmpresa}, '/public/posts/${req.file.filename}', '${requisitos}', '${salario}', '${tipoContrato}', '${escolaridade}', '${cargaHoraria}', '${horario}', ${resPost.insertId})`);
 
                 const imagemPath = `/public/posts/${req.file.filename}`;
 
