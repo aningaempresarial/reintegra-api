@@ -129,7 +129,23 @@ router.route('/all/emprego')
                     SELECT
                         tbExDetento.idExDetento,
                         tbExDetento.nomeExDetento,
-                        tbPerfil.fotoPerfil
+                        tbExDetento.sexoExDetento,
+                        tbExDetento.dataNascExDetento,
+                        tbExDetento.logradouroExDetento,
+                        tbExDetento.bairroExDetento,
+                        tbExDetento.cidadeExDetento,
+                        tbExDetento.estadoExDetento,
+                        tbUsuario.emailUsuario,
+                        tbPerfil.fotoPerfil,
+                        tbEducacaoExDetento.nomeEscola,
+                        tbEducacaoExDetento.nomeCurso,
+                        tbEducacaoExDetento.dataFim AS dataFimCurso,
+                        tbEducacaoExDetento.dataInicio AS dataInicioCurso,
+                        tbEducacaoExDetento.descricaoCurso,
+                        tbExperienciasExDetento.nomeEmpresaExperiencia,
+                        tbExperienciasExDetento.nomeCargoExperiencia,
+                        tbExperienciasExDetento.dataInicio AS dataInicioExperiencia,
+                        tbExperienciasExDetento.dataFim AS dataFimExperiencia
                     FROM
                         tbCandidatoVaga
                     JOIN
@@ -138,19 +154,64 @@ router.route('/all/emprego')
                         tbVaga ON tbCandidatoVaga.idVaga = tbVaga.idVaga
                     JOIN
                         tbPerfil ON tbExDetento.idUsuario = tbPerfil.idUsuario
+                    JOIN
+                        tbUsuario ON tbExDetento.idUsuario = tbUsuario.idUsuario
+                    LEFT JOIN
+                        tbEducacaoExDetento ON tbExDetento.idExDetento = tbEducacaoExDetento.idExDetento
+                    LEFT JOIN
+                        tbExperienciasExDetento ON tbExDetento.idExDetento = tbExperienciasExDetento.idExDetento
                     WHERE
                         tbVaga.nomeVaga = '${postagem.tituloPostagem}'
                 `);
-
+                
+                const candidatosAgrupados = candidatos.reduce((acc, candidato) => {
+                    let candidatoExistente = acc.find(c => c.idUsuario === candidato.idExDetento);
+                    
+                    if (!candidatoExistente) {
+                        candidatoExistente = {
+                            idUsuario: candidato.idExDetento,
+                            nome: candidato.nomeExDetento,
+                            email: candidato.emailUsuario,
+                            sexo: candidato.sexoExDetento,
+                            dataNasc: candidato.dataNascExDetento,
+                            logradouro: candidato.logradouroExDetento,
+                            bairro: candidato.bairroExDetento,
+                            cidade: candidato.cidadeExDetento,
+                            estado: candidato.estadoExDetento,
+                            foto: candidato.fotoPerfil,
+                            educacao: [],
+                            experiencia: []
+                        };
+                        acc.push(candidatoExistente);
+                    }
+            
+                    if (candidato.nomeEscola) {
+                        candidatoExistente.educacao.push({
+                            escola: candidato.nomeEscola,
+                            curso: candidato.nomeCurso,
+                            dataInicioCurso: candidato.dataInicioCurso,
+                            dataFimCurso: candidato.dataFimCurso,
+                            descCurso: candidato.descricaoCurso
+                        });
+                    }
+                    
+                    if (candidato.nomeEmpresaExperiencia) {
+                        candidatoExistente.experiencia.push({
+                            empresa: candidato.nomeEmpresaExperiencia,
+                            cargo: candidato.nomeCargoExperiencia,
+                            dataInicioExperiencia: candidato.dataInicioExperiencia,
+                            dataFimExperiencia: candidato.dataFimExperiencia
+                        });
+                    }
+            
+                    return acc;
+                }, []);
+                
                 return {
                     ...postagem,
-                    candidatos: candidatos.map(candidato => ({
-                        idUsuario: candidato.idExDetento,
-                        nome: candidato.nomeExDetento,
-                        foto: candidato.fotoPerfil
-                    }))
+                    candidatos: candidatosAgrupados
                 };
-            }));
+            }));                    
 
             return res.json(postagensComCandidatos);
         } catch (erro) {
