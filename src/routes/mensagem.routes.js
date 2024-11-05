@@ -108,7 +108,8 @@ router.get('/mensagens', async (req, res) => {
                 m.idDestinatario,
                 m.conteudoMensagem,
                 m.tipoMensagem,
-                u.usuario
+                u.usuario,
+                p.fotoPerfil
             FROM
                 tbMensagem m
             JOIN
@@ -116,6 +117,8 @@ router.get('/mensagens', async (req, res) => {
                     WHEN m.idRemetente = ${idUsuario} THEN m.idDestinatario
                     ELSE m.idRemetente
                 END
+            JOIN
+                tbPerfil p ON m.idRemetente = p.idUsuario
             WHERE
                 m.idRemetente = ${idUsuario} OR m.idDestinatario = ${idUsuario}
             ORDER BY
@@ -124,8 +127,8 @@ router.get('/mensagens', async (req, res) => {
 
         const mensagensAgrupadas = [];
 
-        mensagens.forEach(mensagem => {
-            const { idDestinatario, idRemetente, usuario, ...resto } = mensagem;
+        mensagens.forEach((mensagem) => {
+            const { idDestinatario, idRemetente, usuario, fotoPerfil, ...resto } = mensagem;
             const idOutroUsuario = idRemetente === idUsuario ? idDestinatario : idRemetente;
 
             let usuarioExistente = mensagensAgrupadas.find(usuario => usuario.usuario === idOutroUsuario);
@@ -133,6 +136,7 @@ router.get('/mensagens', async (req, res) => {
                 usuarioExistente = {
                     usuario: idOutroUsuario,
                     nomeUsuario: usuario,
+                    fotoPerfil: fotoPerfil,
                     mensagens: []
                 };
                 mensagensAgrupadas.push(usuarioExistente);
@@ -140,9 +144,9 @@ router.get('/mensagens', async (req, res) => {
 
             usuarioExistente.mensagens.push({
                 ...resto,
-                usuario: idRemetente === idUsuario ? user[1].usuario : usuario
+                usuario: idRemetente === idUsuario ? user[1].usuario : usuario,
             });
-        });
+        })
 
         res.status(200).json(mensagensAgrupadas);
     } catch (erro) {

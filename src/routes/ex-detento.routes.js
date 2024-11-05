@@ -7,6 +7,7 @@ import { validaSenha } from "../functions/usuario/valida-senha.js";
 import { validaTelefone } from "../functions/utils/valida-telefone.js";
 import { checkUsernameExists } from "../functions/utils/verifica-usuario.js";
 import { getUser } from "../functions/auth/login.js";
+import { formatarDataIso } from "../functions/utils/formatar-data-iso.js";
 
 const router = Router();
 const upload = multer();
@@ -149,6 +150,97 @@ router.route('/info')
                     res.status(404).json({ erro: 'Usuário não encontrado.', detalhe: erro.message });
                 }
 
+            }
+        } catch (erro) {
+            res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
+        }
+
+    })
+
+
+router.route('/info-curriculo')
+    .post(upload.none(), async (req, res) => {
+        const { token } = req.body || {};
+
+        try {
+            if (typeof token != 'undefined') {
+                const user = await getUser(token);
+
+                if (user[0]) {
+
+                    const resposta = await query(`SELECT tbExDetento.idExDetento, cepExDetento, logradouroExDetento, bairroExDetento, cidadeExDetento, estadoExDetento, escolaridadeExDetento, numFoneExDetento FROM tbExDetento LEFT JOIN tbFoneExDetento ON tbExDetento.idExDetento = tbFoneExDetento.idExDetento WHERE idUsuario = ${user[1].idUsuario}`);
+
+                    const res_2 = await query(`SELECT * FROM tbExperienciasExDetento WHERE idExDetento = ${resposta[0].idExDetento}`)
+
+                    resposta[0].experiencias = res_2;
+
+                    return res.json(resposta[0]);
+
+                } else {
+                    res.status(404).json({ erro: 'Usuário não encontrado.', detalhe: erro.message });
+                }
+
+            }
+        } catch (erro) {
+            res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
+        }
+
+    })
+    .put(upload.none(), async (req, res) => {
+
+        const { token, idExDetento, cepExDetento, logradouroExDetento, bairroExDetento, cidadeExDetento, estadoExDetento, escolaridadeExDetento, numFoneExDetento, experiencias } = req.body || {};
+
+        try {
+            if (typeof token !== 'undefined') {
+                const user = await getUser(token);
+
+                if (user[0]) {
+
+                    const updateExDetentoQuery = `
+                        UPDATE tbExDetento SET
+                            cepExDetento = ${cepExDetento != 'null' ? `'${cepExDetento}'` : 'NULL'},
+                            logradouroExDetento = ${logradouroExDetento != 'null' ? `'${logradouroExDetento}'` : 'NULL'},
+                            bairroExDetento = ${bairroExDetento != 'null' ? `'${bairroExDetento}'` : 'NULL'},
+                            cidadeExDetento = ${cidadeExDetento != 'null' ? `'${cidadeExDetento}'` : 'NULL'},
+                            estadoExDetento = ${estadoExDetento != 'null' ? `'${estadoExDetento}'` : 'NULL'},
+                            escolaridadeExDetento = ${escolaridadeExDetento != 'null' ? `'${escolaridadeExDetento}'` : 'NULL'}
+                        WHERE idExDetento = ${idExDetento};
+                    `;
+
+                    await query(updateExDetentoQuery);
+
+                    const telefoneCheckQuery = `SELECT * FROM tbFoneExDetento WHERE idExDetento = ${idExDetento}`;
+                    const existingPhone = await query(telefoneCheckQuery);
+
+                    if (existingPhone.length === 0) {
+                        const insertPhoneQuery = `
+                            INSERT INTO tbFoneExDetento (idExDetento, numFoneExDetento)
+                            VALUES (${idExDetento}, ${numFoneExDetento != 'null' ? `'${numFoneExDetento}'` : 'NULL'});
+                        `;
+                        await query(insertPhoneQuery);
+                    } else {
+                        const updatePhoneQuery = `
+                            UPDATE tbFoneExDetento
+                            SET numFoneExDetento = ${numFoneExDetento != 'null' ? `'${numFoneExDetento}'` : 'NULL'}
+                            WHERE idExDetento = ${idExDetento};
+                        `;
+                        await query(updatePhoneQuery);
+                    }
+
+                    await query(`DELETE FROM tbExperienciasExDetento WHERE idExDetento = ${idExDetento}`)
+
+                    const exp = JSON.parse(experiencias);
+                    exp.map(async (experiencia) => {
+
+                        const insertExperienceQuery = `
+                        INSERT INTO tbExperienciasExDetento (idExDetento, nomeEmpresaExperiencia, nomeCargoExperiencia, dataInicio, dataFim)
+                        VALUES (${idExDetento}, '${experiencia.nomeEmpresaExperiencia}', '${experiencia.nomeCargoExperiencia}', '${formatarDataIso(experiencia.dataInicio)}', '${formatarDataIso(experiencia.dataFim)}');`;
+
+                        await query(insertExperienceQuery);
+                    })
+
+                    return res.status(200).json({ message: 'Dados atualizados com sucesso.' });
+                }
             }
         } catch (erro) {
             res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
