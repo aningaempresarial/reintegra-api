@@ -154,6 +154,7 @@ router.route("/all/:usuario").get(async (req, res) => {
                         tbExDetento.estadoExDetento,
                         tbExDetento.escolaridadeExDetento,
                         tbUsuario.emailUsuario,
+                        tbUsuario.usuario,
                         tbPerfil.fotoPerfil,
                         tbExperienciasExDetento.nomeEmpresaExperiencia,
                         tbExperienciasExDetento.nomeCargoExperiencia,
@@ -187,6 +188,7 @@ router.route("/all/:usuario").get(async (req, res) => {
                                 nome: candidato.nomeExDetento,
                                 email: candidato.emailUsuario,
                                 sexo: candidato.sexoExDetento,
+                                usuario: candidato.usuario,
                                 dataNasc: candidato.dataNascExDetento,
                                 escolaridade: candidato.escolaridadeExDetento,
                                 logradouro: candidato.logradouroExDetento,
@@ -391,6 +393,54 @@ router.route("/").post(upload.single("imagem"), async (req, res) => {
         } else {
             res.status(404).json({ erro: "Usuario não encontrado." });
         }
+    } catch (erro) {
+        console.log(erro);
+        res.status(500).json({
+            erro: "Erro ao processar a solicitação.",
+            detalhe: erro.message,
+        });
+    }
+});
+
+
+router.route("/vagas/id/:idPostagem").get(async (req, res) => {
+    const { idPostagem } = req.params || {};
+
+    if (!idPostagem) {
+        return res
+            .status(400)
+            .json({ erro: "`idPostagem` não é um campo válido." });
+    }
+
+    try {
+        const resVagas = await query(`
+                SELECT
+                    tbVaga.idVaga,
+                    tbVaga.nomeVaga,
+                    tbVaga.descricaoVaga,
+                    tbVaga.imagem,
+                    tbVaga.requisitosVaga,
+                    tbVaga.salarioVaga,
+                    tbVaga.tipoContrato,
+                    tbVaga.tipoEscolaridade,
+                    tbVaga.cargaHoraria,
+                    tbVaga.horarioVaga,
+                    tbVaga.idPostagem
+                FROM
+                    tbVaga
+                JOIN
+                    tbPostagem ON tbPostagem.idPostagem = tbVaga.idPostagem
+                WHERE
+                    tbVaga.idPostagem = ${idPostagem}
+            `);
+
+        if (resVagas.length === 0) {
+            return res
+                .status(404)
+                .json({ erro: "Nenhuma vaga encontrada." });
+        }
+
+        return res.json(resVagas[0]);
     } catch (erro) {
         console.log(erro);
         res.status(500).json({
