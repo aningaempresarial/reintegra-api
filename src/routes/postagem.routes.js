@@ -100,7 +100,7 @@ router.route("/all/emprego").get(async (req, res) => {
 router.route("/all/:usuario").get(async (req, res) => {
     const usuario = req.params.usuario || undefined;
 
-    if (typeof usuario == "undefined") {
+    if (typeof usuario === "undefined") {
         return res
             .status(400)
             .json({ erro: "`usuario` não é um campo válido." });
@@ -152,13 +152,9 @@ router.route("/all/:usuario").get(async (req, res) => {
                         tbExDetento.bairroExDetento,
                         tbExDetento.cidadeExDetento,
                         tbExDetento.estadoExDetento,
+                        tbExDetento.escolaridadeExDetento,
                         tbUsuario.emailUsuario,
                         tbPerfil.fotoPerfil,
-                        tbEducacaoExDetento.nomeEscola,
-                        tbEducacaoExDetento.nomeCurso,
-                        tbEducacaoExDetento.dataFim AS dataFimCurso,
-                        tbEducacaoExDetento.dataInicio AS dataInicioCurso,
-                        tbEducacaoExDetento.descricaoCurso,
                         tbExperienciasExDetento.nomeEmpresaExperiencia,
                         tbExperienciasExDetento.nomeCargoExperiencia,
                         tbExperienciasExDetento.dataInicio AS dataInicioExperiencia,
@@ -173,8 +169,6 @@ router.route("/all/:usuario").get(async (req, res) => {
                         tbPerfil ON tbExDetento.idUsuario = tbPerfil.idUsuario
                     JOIN
                         tbUsuario ON tbExDetento.idUsuario = tbUsuario.idUsuario
-                    LEFT JOIN
-                        tbEducacaoExDetento ON tbExDetento.idExDetento = tbEducacaoExDetento.idExDetento
                     LEFT JOIN
                         tbExperienciasExDetento ON tbExDetento.idExDetento = tbExperienciasExDetento.idExDetento
                     WHERE
@@ -194,38 +188,15 @@ router.route("/all/:usuario").get(async (req, res) => {
                                 email: candidato.emailUsuario,
                                 sexo: candidato.sexoExDetento,
                                 dataNasc: candidato.dataNascExDetento,
+                                escolaridade: candidato.escolaridadeExDetento,
                                 logradouro: candidato.logradouroExDetento,
                                 bairro: candidato.bairroExDetento,
                                 cidade: candidato.cidadeExDetento,
                                 estado: candidato.estadoExDetento,
                                 foto: candidato.fotoPerfil,
-                                educacao: [],
                                 experiencia: [],
                             };
                             acc.push(candidatoExistente);
-                        }
-
-                        if (candidato.nomeEscola) {
-                            const educacaoExistente =
-                                candidatoExistente.educacao.find(
-                                    (e) =>
-                                        e.escola === candidato.nomeEscola &&
-                                        e.curso === candidato.nomeCurso &&
-                                        e.dataInicioCurso ===
-                                            candidato.dataInicioCurso &&
-                                        e.dataFimCurso ===
-                                            candidato.dataFimCurso
-                                );
-
-                            if (!educacaoExistente) {
-                                candidatoExistente.educacao.push({
-                                    escola: candidato.nomeEscola,
-                                    curso: candidato.nomeCurso,
-                                    dataInicioCurso: candidato.dataInicioCurso,
-                                    dataFimCurso: candidato.dataFimCurso,
-                                    descCurso: candidato.descricaoCurso,
-                                });
-                            }
                         }
 
                         if (candidato.nomeEmpresaExperiencia) {
@@ -275,6 +246,7 @@ router.route("/all/:usuario").get(async (req, res) => {
         });
     }
 });
+
 
 router.route("/vaga").post(upload.single("imagem"), async (req, res) => {
     const {
