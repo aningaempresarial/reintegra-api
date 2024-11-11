@@ -499,4 +499,72 @@ router.route("/vagas/:usuario").get(async (req, res) => {
     }
 });
 
+router.route("/last/:usuario").get(async (req, res) => {
+    const usuario = req.params.usuario || undefined;
+
+    if (typeof usuario === "undefined") {
+        return res
+            .status(400)
+            .json({ erro: "`usuario` não é um campo válido." });
+    }
+
+    try {
+        const ultimoPost = await query(`
+            SELECT
+                tbPostagem.idPostagem,
+                tbPostagem.tituloPostagem,
+                tbPostagem.conteudoPostagem,
+                tbPostagem.dataCriacao AS 'dtPostagem',
+                DATE_FORMAT(tbPostagem.dataCriacao, '%d/%m/%Y') AS dataCriacao,
+                DATE_FORMAT(tbPostagem.dataModificacao, '%d/%m/%Y') AS dataModificacao,
+                DATE_FORMAT(tbPostagem.dataFim, '%d/%m/%Y') AS dataFim,
+                tbPostagem.categoriaPostagem,
+                tbPostagem.statusPostagem,
+                tbPostagem.imagemPostagem,
+                tbVaga.idVaga
+            FROM
+                tbPostagem
+            JOIN
+                tbUsuario ON tbPostagem.idUsuario = tbUsuario.idUsuario
+            JOIN
+                tbVaga ON tbPostagem.idPostagem = tbVaga.idPostagem
+            WHERE
+                tbUsuario.usuario = '${usuario}'
+            ORDER BY
+                tbPostagem.dataCriacao DESC
+            LIMIT 1
+        `);
+
+        if (ultimoPost.length === 0) {
+            return res.status(404).json({ erro: "Nenhuma postagem encontrada para o usuário especificado." });
+        }
+
+        const idVaga = ultimoPost[0].idVaga;
+
+        const candidatos = await query(`
+            SELECT 
+                COUNT(tbCandidatoVaga.idVaga) AS candidatos
+            FROM
+                tbCandidatoVaga
+            WHERE
+                idVaga = ${idVaga}
+        `);
+
+        if (candidatos.length !== 0) {
+            ultimoPost[0].candidatos = candidatos[0].candidatos;
+        } else {
+            ultimoPost[0].candidatos = 0;
+        }
+
+        return res.json(ultimoPost[0]);
+    } catch (erro) {
+        console.log(erro);
+        res.status(500).json({
+            erro: "Erro ao processar a solicitação.",
+            detalhe: erro.message,
+        });
+    }
+});
+
+
 export default router;
