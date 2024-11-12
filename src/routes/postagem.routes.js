@@ -132,7 +132,7 @@ router.route("/all/:usuario").get(async (req, res) => {
                     tbPostagem
                 JOIN
                     tbUsuario ON tbPostagem.idUsuario = tbUsuario.idUsuario
-                JOIN
+                LEFT JOIN
                     tbVaga ON tbPostagem.idPostagem = tbVaga.idPostagem
                 WHERE
                     tbUsuario.usuario = '${usuario}'
@@ -248,7 +248,6 @@ router.route("/all/:usuario").get(async (req, res) => {
         });
     }
 });
-
 
 router.route("/vaga").post(upload.single("imagem"), async (req, res) => {
     const {
@@ -402,7 +401,6 @@ router.route("/").post(upload.single("imagem"), async (req, res) => {
     }
 });
 
-
 router.route("/vagas/id/:idPostagem").get(async (req, res) => {
     const { idPostagem } = req.params || {};
 
@@ -435,9 +433,7 @@ router.route("/vagas/id/:idPostagem").get(async (req, res) => {
             `);
 
         if (resVagas.length === 0) {
-            return res
-                .status(404)
-                .json({ erro: "Nenhuma vaga encontrada." });
+            return res.status(404).json({ erro: "Nenhuma vaga encontrada." });
         }
 
         return res.json(resVagas[0]);
@@ -536,7 +532,9 @@ router.route("/last/:usuario").get(async (req, res) => {
         `);
 
         if (ultimoPost.length === 0) {
-            return res.status(404).json({ erro: "Nenhuma postagem encontrada para o usuário especificado." });
+            return res.status(404).json({
+                erro: "Nenhuma postagem encontrada para o usuário especificado.",
+            });
         }
 
         const idVaga = ultimoPost[0].idVaga;
@@ -566,5 +564,99 @@ router.route("/last/:usuario").get(async (req, res) => {
     }
 });
 
+router.route("/candidatos/:usuario").get(async (req, res) => {
+    const usuario = req.params.usuario || undefined;
+
+    if (typeof usuario === "undefined") {
+        return res
+            .status(400)
+            .json({ erro: "`usuario` não é um campo válido." });
+    }
+
+    try {
+        const candidatacoes = await query(`
+            SELECT
+                tbExDetento.nomeExDetento,
+                tbVaga.nomeVaga,
+                tbPerfil.fotoPerfil,
+                usuarioEmpresa.usuario AS usuarioEmpresa,
+                usuarioCandidato.usuario AS usuarioCandidato
+            FROM
+                tbCandidatoVaga
+            JOIN
+                tbVaga ON tbCandidatoVaga.idVaga = tbVaga.idVaga
+            JOIN
+                tbPostagem ON tbVaga.idPostagem = tbPostagem.idPostagem
+            JOIN
+                tbUsuario AS usuarioEmpresa ON tbPostagem.idUsuario = usuarioEmpresa.idUsuario
+            JOIN
+                tbExDetento ON tbCandidatoVaga.idExDetento = tbExDetento.idExDetento
+            JOIN
+                tbUsuario AS usuarioCandidato ON tbExDetento.idUsuario = usuarioCandidato.idUsuario
+            LEFT JOIN
+                tbPerfil ON usuarioCandidato.idUsuario = tbPerfil.idPerfil
+            WHERE
+                usuarioEmpresa.usuario = '${usuario}'
+        `);
+
+        if (candidatacoes.length === 0) {
+            return res.status(404).json({
+                erro: "Nenhum candidato encontrado para a empresa especificada.",
+            });
+        }
+
+        return res.json(candidatacoes);
+    } catch (erro) {
+        console.log(erro);
+        res.status(500).json({
+            erro: "Erro ao processar a solicitação.",
+            detalhe: erro.message,
+        });
+    }
+});
+
+router.route("/stats/:usuario").get(async (req, res) => {
+    const usuario = req.params.usuario || undefined;
+
+    if (typeof usuario === "undefined") {
+        return res
+            .status(400)
+            .json({ erro: "`usuario` não é um campo válido." });
+    }
+
+    try {
+        const stats = await query(`
+            SELECT
+                COUNT(tbCandidatoVaga.idCandidatoVaga) AS totalCandidatos,
+                COUNT(CASE WHEN tbPostagem.categoriaPostagem = 'emprego' THEN tbPostagem.idPostagem END) AS totalVagas,
+                COUNT(CASE WHEN tbPostagem.categoriaPostagem = 'divulgacao' THEN tbPostagem.idPostagem END) AS totalDivulgacoes,
+                COUNT(CASE WHEN tbPostagem.categoriaPostagem = 'informativo' THEN tbPostagem.idPostagem END) AS totalInformativos
+            FROM
+                tbPostagem
+            LEFT JOIN
+                tbVaga ON tbPostagem.idPostagem = tbVaga.idPostagem
+            LEFT JOIN
+                tbCandidatoVaga ON tbVaga.idVaga = tbCandidatoVaga.idVaga
+            JOIN
+                tbUsuario AS usuarioEmpresa ON tbPostagem.idUsuario = usuarioEmpresa.idUsuario
+            WHERE
+                usuarioEmpresa.usuario = '${usuario}'
+        `);
+
+        if (stats.length === 0) {
+            return res.status(404).json({
+                erro: "Nenhum dado encontrado para a empresa especificada.",
+            });
+        }
+
+        return res.json(stats);
+    } catch (erro) {
+        console.log(erro);
+        res.status(500).json({
+            erro: "Erro ao processar a solicitação.",
+            detalhe: erro.message,
+        });
+    }
+});
 
 export default router;
