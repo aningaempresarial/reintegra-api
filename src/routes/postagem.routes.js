@@ -659,4 +659,30 @@ router.route("/stats/:usuario").get(async (req, res) => {
     }
 });
 
+router.route("/status/:id").put(async (req, res) => {
+    const { id } = req.params;
+
+    if (!id) { 
+        return res
+            .status(400)
+            .json({ erro: "`id` não é um campo válido." });
+    }
+
+    try {
+        const exclusao = await query(`
+            UPDATE tbPostagem
+            SET statusPostagem = 'excluido'
+            WHERE idPostagem = '${id}'
+        `);
+
+        return res.json({ sucesso: true, mensagem: "Postagem excluída com sucesso.", resultado: exclusao });
+    } catch (erro) {
+        console.error(erro);
+        return res.status(500).json({
+            erro: "Erro ao processar a solicitação.",
+            detalhe: erro.message,
+        });
+    }
+});
+
 export default router;
