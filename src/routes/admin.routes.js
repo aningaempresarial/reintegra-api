@@ -34,7 +34,37 @@ router.route('/getdata')
             });
         }
 
-    })
+    });
 
+router.route("/stats")
+    .get(async (req, res) => {
+        try {
+            const stats = await query(`
+                SELECT
+                    COUNT(tbUsuario.idUsuario) AS totalUsuarios,
+                    COUNT(CASE WHEN tbUsuario.tipoEntidade = 'empresa' THEN tbUsuario.idUsuario END) AS totalEmpresas,
+                    COUNT(CASE WHEN tbUsuario.tipoEntidade = 'ex-detento' THEN tbUsuario.idUsuario END) AS totalExDetentos,
+                    COUNT(CASE WHEN tbPostagem.categoriaPostagem = 'emprego' THEN tbPostagem.idPostagem END) AS totalVagas
+                FROM
+                    tbUsuario
+                LEFT JOIN
+                    tbPostagem ON tbUsuario.idUsuario = tbPostagem.idUsuario
+            `);
+    
+            if (stats.length === 0) {
+                return res.status(404).json({
+                    erro: "Nenhum dado encontrado.",
+                });
+            }
+    
+            return res.json(stats[0]);
+        } catch (erro) {
+            console.error(erro);
+            res.status(500).json({
+                erro: "Erro ao processar a solicitação.",
+                detalhe: erro.message,
+            });
+        }
+    });    
 
 export default router;
