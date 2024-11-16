@@ -685,4 +685,37 @@ router.route("/status/:id").put(async (req, res) => {
     }
 });
 
+router.route("/vaga-stats").get(async (req, res) => {
+    try {
+        const stats = await query(`
+            SELECT
+                DATE_FORMAT(tbPostagem.dataCriacao, '%b') AS mes, 
+                YEAR(tbPostagem.dataCriacao) AS ano,
+                COUNT(tbVaga.idVaga) AS totalVagas
+            FROM
+                tbPostagem
+            LEFT JOIN
+                tbVaga ON tbPostagem.idPostagem = tbVaga.idPostagem
+            GROUP BY 
+                YEAR(tbPostagem.dataCriacao), MONTH(tbPostagem.dataCriacao)
+            ORDER BY 
+                YEAR(tbPostagem.dataCriacao), MONTH(tbPostagem.dataCriacao)
+        `);
+
+        if (stats.length === 0) {
+            return res.status(404).json({
+                erro: "Nenhum dado encontrado.",
+            });
+        }
+
+        return res.json(stats);
+    } catch (erro) {
+        console.log(erro);
+        res.status(500).json({
+            erro: "Erro ao processar a solicitação.",
+            detalhe: erro.message,
+        });
+    }
+});
+
 export default router;
