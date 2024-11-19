@@ -1,5 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
+import nodemailer from 'nodemailer'
 import { query } from '../db/query.js';
 
 const router = Router();
@@ -83,6 +84,29 @@ router.route('/')
         }
     })
 
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'yotozangue@gmail.com',
+        pass: '',
+    },
+});
+
+
+async function enviarEmail(destinatario, assunto, mensagem) {
+    try {
+        const info = await transporter.sendMail({
+            from: '"Suporte Reintegra" <aningaempresarial@gmail.com',
+            to: destinatario,
+            subject: assunto,
+            html: mensagem,
+        });
+        console.log(`E-mail enviado: ${info.messageId}`);
+    } catch (erro) {
+        console.error(`Erro ao enviar e-mail: ${erro.message}`);
+    }
+}
+
 router.route('/status/:usuario')
     .put(upload.none(), async (req, res) => {
         const { status } = req.body || '';
@@ -101,6 +125,34 @@ router.route('/status/:usuario')
 
             if (resposta.affectedRows === 0) {
                 return res.status(404).json({ erro: 'Usuário não encontrado.' });
+            }
+
+            const usuarioData = await query(`SELECT emailUsuario FROM tbUsuario WHERE usuario = '${usuario}'`);
+            const emailUsuario = usuarioData[0].emailUsuario;
+
+            let mensagem = '';
+            let assunto = '';
+
+            if (status === 'bloqueado') {
+                assunto = 'Conta Reintegra Bloqueada';
+                mensagem = `
+                    <p>Olá,</p>
+                    <p>Somos da equipe de suporte do Reintegra!</p>
+                    <p>Informamos que sua conta foi <b>bloqueada</b>. Caso tenha dúvidas, entre em contato com nosso suporte.</p>
+                    <p>Suporte: aningaempresarial@gmail.com</p>
+                `;
+            } else if (status === 'excluido') {
+                assunto = 'Conta Reintegra Excluída';
+                mensagem = `
+                    <p>Olá,</p>
+                    <p>Somos da equipe de suporte do Reintegra!</p>
+                    <p>Informamos que sua conta foi <b>excluída</b>. Caso tenha dúvidas, entre em contato com nosso suporte.</p>
+                    <p>Suporte: aningaempresarial@gmail.com</p>
+                `;
+            }
+
+            if (mensagem && assunto) {
+                enviarEmail(emailUsuario, assunto, mensagem);
             }
 
             return res.json({ mensagem: 'Status atualizado com sucesso.' });
