@@ -161,5 +161,78 @@ router.route('/status/:usuario')
         }
     });
 
+    router.route('/lasts')
+    .get(async (req, res) => {
+        try {
+            const cadastros = await query(`
+                SELECT
+                    dataCriacao,
+                    fotoPerfil,
+                    COALESCE(a.nomeAdmin, o.nomeOng, e.nomeExDetento, emp.nomeEmpresa) AS nomeUsuario
+                FROM
+                    tbUsuario u
+                LEFT JOIN
+                    tbAdmin a ON u.idUsuario = a.idUsuario
+                LEFT JOIN
+                    tbOng o ON u.idUsuario = o.idUsuario
+                LEFT JOIN
+                    tbExDetento e ON u.idUsuario = e.idUsuario
+                LEFT JOIN
+                    tbEmpresa emp ON u.idUsuario = emp.idUsuario
+                LEFT JOIN
+                    tbPerfil ON u.idUsuario = tbPerfil.idUsuario
+                WHERE
+                    u.statusEntidade = 'ativo'
+                ORDER BY
+                    dataCriacao DESC
+                LIMIT 5;
+            `);
+
+            if (cadastros.length === 0) {
+                return res.status(404).json({
+                    erro: "Nenhum dado encontrado.",
+                });
+            }
+    
+            return res.json(cadastros);
+        } catch (erro) {
+            res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
+        }
+    })
+
+    router.get('/mensal', async (req, res) => {
+        try {
+            const usuariosMes = `
+                SELECT 
+                    DATE_FORMAT(u.dataCriacao, '%b') AS mes,
+                    SUM(CASE WHEN e.idUsuario IS NOT NULL THEN 1 ELSE 0 END) AS exDetentos,
+                    SUM(CASE WHEN emp.idUsuario IS NOT NULL THEN 1 ELSE 0 END) AS empresas
+                FROM 
+                    tbUsuario u
+                LEFT JOIN 
+                    tbExDetento e ON u.idUsuario = e.idUsuario
+                LEFT JOIN 
+                    tbEmpresa emp ON u.idUsuario = emp.idUsuario
+                WHERE 
+                    u.statusEntidade = 'ativo'
+                GROUP BY 
+                    DATE_FORMAT(u.dataCriacao, '%Y-%m')
+                ORDER BY 
+                    DATE_FORMAT(u.dataCriacao, '%Y-%m');
+            `;
+    
+            const resultado = await query(usuariosMes);
+            const data = resultado.map(row => ({
+                mes: row.mes,
+                empresas: row.empresas,
+                exDetentos: row.exDetentos
+            }));
+    
+            res.json({ data });
+        } catch (error) {
+            console.error('Erro ao buscar dados:', error);
+            res.status(500).json({ error: 'Erro ao buscar dados.' });
+        }
+    });
 
 export default router;
