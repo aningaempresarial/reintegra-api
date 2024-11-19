@@ -95,4 +95,51 @@ router.route("/setoresempresas").get(async (req, res) => {
     }
 });
 
+router.route('/postagens')
+    .get(async (req, res) => {
+        try {
+            const { nomePostagem, categoriaPostagem, dataCriacao, orderBy, orderDirection = 'ASC' } = req.query;
+            let queryStr = `
+                SELECT
+                    idPostagem,
+                    tituloPostagem,
+                    imagemPostagem,
+                    categoriaPostagem,
+                    dataCriacao
+                FROM
+                    tbPostagem
+                WHERE 1=1
+            `;
+
+            if (nomePostagem) {
+                const nomeCondition = `%${nomePostagem}%`;
+                queryStr += ` AND nomePostagem LIKE '${nomeCondition}'`;
+            }
+
+            if (categoriaPostagem) {
+                queryStr += ` AND categoriaPostagem = '${categoriaPostagem}'`;
+            }
+
+            if (dataCriacao) {
+                queryStr += ` AND DATE(dataCriacao) = '${dataCriacao}'`;
+            }
+
+            // Ordenação
+            if (orderBy) {
+                const validColumns = ['idPostagem', 'nomePostagem', 'fotoPostagem', 'categoriaPostagem', 'dataCriacao'];
+                if (validColumns.includes(orderBy)) {
+                    queryStr += ` ORDER BY ${orderBy} ${orderDirection.toUpperCase()}`;
+                } else {
+                    return res.status(400).json({ erro: 'Coluna de ordenação inválida.' });
+                }
+            }
+
+            const resposta = await query(queryStr);
+
+            return res.json(resposta);
+        } catch (erro) {
+            res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
+        }
+    });
+
 export default router;
