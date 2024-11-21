@@ -108,6 +108,8 @@ router.get('/mensagens', async (req, res) => {
                 m.idDestinatario,
                 m.conteudoMensagem,
                 m.tipoMensagem,
+                DATE_FORMAT(m.dataCriacao, '%H:%i:%s') AS horario, 
+                FORMAT(m.dataCriacao, 'dd/MM/yyyy') AS data,
                 u.usuario,
                 p.fotoPerfil
             FROM
@@ -137,6 +139,8 @@ router.get('/mensagens', async (req, res) => {
                     usuario: idOutroUsuario,
                     nomeUsuario: usuario,
                     fotoPerfil: fotoPerfil,
+                    horario: mensagens.horario,
+                    data: mensagens.data,
                     mensagens: []
                 };
                 mensagensAgrupadas.push(usuarioExistente);
@@ -177,7 +181,10 @@ router.get('/mensagens/:idUsuario', async (req, res) => {
                 m.idDestinatario,
                 m.conteudoMensagem,
                 m.tipoMensagem,
-                u.usuario
+                u.usuario,
+                DATE_FORMAT(m.dataCriacao, '%H:%i') AS horario, 
+                FORMAT(m.dataCriacao, 'dd/MM/yyyy') AS data,
+                p.fotoPerfil
             FROM
                 tbMensagem m
             JOIN
@@ -185,6 +192,8 @@ router.get('/mensagens/:idUsuario', async (req, res) => {
                     WHEN m.idRemetente = ${idUsuarioLogado} THEN m.idDestinatario
                     ELSE m.idRemetente
                 END
+            JOIN
+                tbPerfil p ON u.idUsuario = p.idUsuario
             WHERE
                 (m.idRemetente = ${idUsuarioLogado} AND m.idDestinatario = ${idUsuario})
                 OR (m.idRemetente = ${idUsuario} AND m.idDestinatario = ${idUsuarioLogado})
