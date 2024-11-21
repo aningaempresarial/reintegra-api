@@ -580,7 +580,8 @@ router.route("/candidatos/:usuario").get(async (req, res) => {
                 tbVaga.nomeVaga,
                 tbPerfil.fotoPerfil,
                 usuarioEmpresa.usuario AS usuarioEmpresa,
-                usuarioCandidato.usuario AS usuarioCandidato
+                usuarioCandidato.usuario AS usuarioCandidato,
+                tbCandidatoVaga.statusCandidato
             FROM
                 tbCandidatoVaga
             JOIN
@@ -594,7 +595,7 @@ router.route("/candidatos/:usuario").get(async (req, res) => {
             JOIN
                 tbUsuario AS usuarioCandidato ON tbExDetento.idUsuario = usuarioCandidato.idUsuario
             LEFT JOIN
-                tbPerfil ON usuarioCandidato.idUsuario = tbPerfil.idPerfil
+                tbPerfil ON usuarioCandidato.idUsuario = tbPerfil.idUsuario
             WHERE
                 usuarioEmpresa.usuario = '${usuario}'
         `);
@@ -669,13 +670,34 @@ router.route("/status/:id").put(async (req, res) => {
     }
 
     try {
-        const exclusao = await query(`
-            UPDATE tbPostagem
-            SET statusPostagem = 'excluido'
-            WHERE idPostagem = '${id}'
-        `);
 
-        return res.json({ sucesso: true, mensagem: "Postagem excluída com sucesso.", resultado: exclusao });
+        const postagem = await query(
+            `SELECT categoriaPostagem FROM tbPostagem WHERE idPostagem = ${id}`
+        );
+        
+        if (postagem.length === 0) {
+            throw new Error('Postagem não encontrada.');
+        }
+        
+        const exclusaoPostagem = await query(
+            `UPDATE tbPostagem SET statusPostagem = 'excluido' WHERE idPostagem = ${id}`
+        );
+
+        if (postagem[0].categoriaPostagem === 'emprego') {
+            const exclusaoVaga = await query(
+                `UPDATE tbVaga SET statusVaga = 'excluido' WHERE idPostagem = ${id}`
+            );
+            
+            const exclusaoCandidato = await query(
+                `UPDATE tbCandidatoVaga
+                SET statusCandidato = 'excluido'
+                WHERE idVaga IN (
+                    SELECT idVaga FROM tbVaga WHERE idPostagem = ${id}
+                )`
+            );
+        };
+
+        return res.json({ sucesso: true, mensagem: "Postagem excluída com sucesso.", resultado: exclusaoPostagem });
     } catch (erro) {
         console.error(erro);
         return res.status(500).json({
