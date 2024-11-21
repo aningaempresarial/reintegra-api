@@ -159,7 +159,8 @@ router.route("/all/:usuario").get(async (req, res) => {
                         tbExperienciasExDetento.nomeEmpresaExperiencia,
                         tbExperienciasExDetento.nomeCargoExperiencia,
                         tbExperienciasExDetento.dataInicio AS dataInicioExperiencia,
-                        tbExperienciasExDetento.dataFim AS dataFimExperiencia
+                        tbExperienciasExDetento.dataFim AS dataFimExperiencia,
+                        tbCandidatoVaga.statusCandidato
                     FROM
                         tbCandidatoVaga
                     JOIN
@@ -196,6 +197,7 @@ router.route("/all/:usuario").get(async (req, res) => {
                                 cidade: candidato.cidadeExDetento,
                                 estado: candidato.estadoExDetento,
                                 foto: candidato.fotoPerfil,
+                                status: candidato.statusCandidato,
                                 experiencia: [],
                             };
                             acc.push(candidatoExistente);
