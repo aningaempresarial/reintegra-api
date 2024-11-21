@@ -105,7 +105,8 @@ router.route('/postagens')
                     tituloPostagem,
                     imagemPostagem,
                     categoriaPostagem,
-                    DATE_FORMAT(dataCriacao, '%d/%m/%Y') AS dataCriacao
+                    DATE_FORMAT(dataCriacao, '%d/%m/%Y') AS dataCriacao,
+                    statusPostagem
                 FROM
                     tbPostagem
                 WHERE 1=1
