@@ -88,7 +88,7 @@ const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: 'yotozangue@gmail.com',
-        pass: '',
+        pass: 'xhgz bwkb jyen gtvt',
     },
 });
 
@@ -109,7 +109,7 @@ async function enviarEmail(destinatario, assunto, mensagem) {
 
 router.route('/status/:usuario')
     .put(upload.none(), async (req, res) => {
-        const { status } = req.body || '';
+        const { status, motivo } = req.body || '';
         const { usuario } = req.params || undefined;
 
         if (!['ativo', 'bloqueado', 'excluido'].includes(status)) {
@@ -136,18 +136,26 @@ router.route('/status/:usuario')
             if (status === 'bloqueado') {
                 assunto = 'Conta Reintegra Bloqueada';
                 mensagem = `
+                    <img src="https://imgur.com/kZ8xkRD.png" style="background-color: white;" />
                     <p>Olá,</p>
                     <p>Somos da equipe de suporte do Reintegra!</p>
-                    <p>Informamos que sua conta foi <b>bloqueada</b>. Caso tenha dúvidas, entre em contato com nosso suporte.</p>
-                    <p>Suporte: aningaempresarial@gmail.com</p>
+                    <p>Informamos que sua conta foi <b>bloqueada</b>.</p>
+                    <p><b>Motivo:</b></p>
+                    <p>${motivo.replace(/\n/g, '<br>')}</p>
+                    <br>
+                    <p>Cordialmente,<br>Suporte Reintegra.</p>
                 `;
             } else if (status === 'excluido') {
                 assunto = 'Conta Reintegra Excluída';
                 mensagem = `
+                    <img src="https://imgur.com/kZ8xkRD.png" style="background-color: white;" />
                     <p>Olá,</p>
                     <p>Somos da equipe de suporte do Reintegra!</p>
-                    <p>Informamos que sua conta foi <b>excluída</b>. Caso tenha dúvidas, entre em contato com nosso suporte.</p>
-                    <p>Suporte: aningaempresarial@gmail.com</p>
+                    <p>Informamos que sua conta foi <b>excluída</b>.</p>
+                    <p><b>Motivo:</b></p>
+                    <p>${motivo.replace(/\n/g, '<br>')}</p>
+                    <br>
+                    <p>Cordialmente,<br>Suporte Reintegra.</p>
                 `;
             }
 
@@ -193,7 +201,7 @@ router.route('/status/:usuario')
                     erro: "Nenhum dado encontrado.",
                 });
             }
-    
+
             return res.json(cadastros);
         } catch (erro) {
             res.status(500).json({ erro: 'Erro ao processar a solicitação.', detalhe: erro.message });
@@ -203,31 +211,31 @@ router.route('/status/:usuario')
     router.get('/mensal', async (req, res) => {
         try {
             const usuariosMes = `
-                SELECT 
+                SELECT
                     DATE_FORMAT(u.dataCriacao, '%b') AS mes,
                     SUM(CASE WHEN e.idUsuario IS NOT NULL THEN 1 ELSE 0 END) AS exDetentos,
                     SUM(CASE WHEN emp.idUsuario IS NOT NULL THEN 1 ELSE 0 END) AS empresas
-                FROM 
+                FROM
                     tbUsuario u
-                LEFT JOIN 
+                LEFT JOIN
                     tbExDetento e ON u.idUsuario = e.idUsuario
-                LEFT JOIN 
+                LEFT JOIN
                     tbEmpresa emp ON u.idUsuario = emp.idUsuario
-                WHERE 
+                WHERE
                     u.statusEntidade = 'ativo'
-                GROUP BY 
+                GROUP BY
                     DATE_FORMAT(u.dataCriacao, '%Y-%m')
-                ORDER BY 
+                ORDER BY
                     DATE_FORMAT(u.dataCriacao, '%Y-%m');
             `;
-    
+
             const resultado = await query(usuariosMes);
             const data = resultado.map(row => ({
                 mes: row.mes,
                 empresas: row.empresas,
                 exDetentos: row.exDetentos
             }));
-    
+
             res.json({ data });
         } catch (error) {
             console.error('Erro ao buscar dados:', error);

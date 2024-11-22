@@ -69,6 +69,8 @@ router.route("/all").get(async (req, res) => {
                     tbPostagem.dataCriacao 'dtPostagem', usuario, tbPostagem.*, tbPerfil.*, tbEmpresa.nomeEmpresa FROM tbPostagem JOIN tbUsuario ON tbUsuario.idUsuario = tbPostagem.idUsuario JOIN tbPerfil ON tbPerfil.idUsuario = tbUsuario.idUsuario JOIN tbEmpresa on tbUsuario.idUsuario = tbEmpresa.idUsuario
                 WHERE
                     statusPostagem = 'ativo'
+                AND
+                    statusEntidade = 'ativo'
                 ORDER BY
                     tbPostagem.dataCriacao DESC
             `);
@@ -91,6 +93,8 @@ router.route("/all/emprego").get(async (req, res) => {
                     statusPostagem = 'ativo'
                 AND
                     categoriaPostagem = 'emprego'
+                AND
+                    statusEntidade = 'ativo'
                 ORDER BY
                     tbPostagem.dataCriacao DESC
             `);
