@@ -108,10 +108,11 @@ router.get('/mensagens', async (req, res) => {
                 m.idDestinatario,
                 m.conteudoMensagem,
                 m.tipoMensagem,
-                DATE_FORMAT(m.dataCriacao, '%H:%i:%s') AS horario, 
+                DATE_FORMAT(m.dataCriacao, '%H:%i:%s') AS horario,
                 FORMAT(m.dataCriacao, 'dd/MM/yyyy') AS data,
                 u.usuario,
-                p.fotoPerfil
+                p.fotoPerfil,
+                pd.fotoPerfil 'pdPerfil'
             FROM
                 tbMensagem m
             JOIN
@@ -121,6 +122,8 @@ router.get('/mensagens', async (req, res) => {
                 END
             JOIN
                 tbPerfil p ON m.idRemetente = p.idUsuario
+            JOIN
+                tbPerfil pd ON m.idDestinatario = pd.idUsuario
             WHERE
                 m.idRemetente = ${idUsuario} OR m.idDestinatario = ${idUsuario}
             ORDER BY
@@ -130,7 +133,7 @@ router.get('/mensagens', async (req, res) => {
         const mensagensAgrupadas = [];
 
         mensagens.forEach((mensagem) => {
-            const { idDestinatario, idRemetente, usuario, fotoPerfil, ...resto } = mensagem;
+            const { idDestinatario, idRemetente, usuario, fotoPerfil, pdPerfil, ...resto } = mensagem;
             const idOutroUsuario = idRemetente === idUsuario ? idDestinatario : idRemetente;
 
             let usuarioExistente = mensagensAgrupadas.find(usuario => usuario.usuario === idOutroUsuario);
@@ -139,6 +142,7 @@ router.get('/mensagens', async (req, res) => {
                     usuario: idOutroUsuario,
                     nomeUsuario: usuario,
                     fotoPerfil: fotoPerfil,
+                    pdPerfil, pdPerfil,
                     horario: mensagens.horario,
                     data: mensagens.data,
                     mensagens: []
@@ -182,7 +186,7 @@ router.get('/mensagens/:idUsuario', async (req, res) => {
                 m.conteudoMensagem,
                 m.tipoMensagem,
                 u.usuario,
-                DATE_FORMAT(m.dataCriacao, '%H:%i') AS horario, 
+                DATE_FORMAT(m.dataCriacao, '%H:%i') AS horario,
                 DATE_FORMAT(m.dataCriacao, '%d/%m/%Y') AS data,
                 p.fotoPerfil
             FROM
@@ -193,7 +197,7 @@ router.get('/mensagens/:idUsuario', async (req, res) => {
                     ELSE m.idRemetente
                 END
             JOIN
-                tbPerfil p ON u.idUsuario = p.idUsuario
+                tbPerfil p ON m.idRemetente = p.idUsuario
             WHERE
                 (m.idRemetente = ${idUsuarioLogado} AND m.idDestinatario = ${idUsuario})
                 OR (m.idRemetente = ${idUsuario} AND m.idDestinatario = ${idUsuarioLogado})

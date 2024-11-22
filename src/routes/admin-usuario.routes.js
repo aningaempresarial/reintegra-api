@@ -21,6 +21,7 @@ router.route('/')
                     u.tentativasLogin,
                     u.tipoEntidade,
                     u.statusEntidade,
+                    tbPerfil.*,
                     COALESCE(a.nomeAdmin, o.nomeOng, e.nomeExDetento, emp.nomeEmpresa, esc.nomeEscola) AS nomeUsuario
                 FROM
                     tbUsuario u
@@ -34,6 +35,8 @@ router.route('/')
                     tbEmpresa emp ON u.idUsuario = emp.idUsuario
                 LEFT JOIN
                     tbEscola esc ON u.idUsuario = esc.idUsuario
+                LEFT JOIN
+                    tbPerfil ON u.idUsuario = tbPerfil.idUsuario
                 WHERE (statusEntidade = 'ativo' OR statusEntidade = 'bloqueado')
             `;
 
