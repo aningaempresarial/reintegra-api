@@ -67,6 +67,8 @@ router.route("/all").get(async (req, res) => {
         const respostaPost = await query(`
                 SELECT
                     tbPostagem.dataCriacao 'dtPostagem', usuario, tbPostagem.*, tbPerfil.*, tbEmpresa.nomeEmpresa FROM tbPostagem JOIN tbUsuario ON tbUsuario.idUsuario = tbPostagem.idUsuario JOIN tbPerfil ON tbPerfil.idUsuario = tbUsuario.idUsuario JOIN tbEmpresa on tbUsuario.idUsuario = tbEmpresa.idUsuario
+                WHERE
+                    statusPostagem = 'ativo'
                 ORDER BY
                     tbPostagem.dataCriacao DESC
             `);
@@ -84,7 +86,11 @@ router.route("/all/emprego").get(async (req, res) => {
     try {
         const respostaPost = await query(`
                 SELECT
-                    tbPostagem.dataCriacao 'dtPostagem', usuario, tbPostagem.*, tbPerfil.* FROM tbPostagem JOIN tbUsuario ON tbUsuario.idUsuario = tbPostagem.idUsuario JOIN tbPerfil ON tbPerfil.idUsuario = tbUsuario.idUsuario
+                    tbPostagem.dataCriacao 'dtPostagem', usuario, tbPostagem.*, tbPerfil.*, tbEmpresa.nomeEmpresa FROM tbPostagem JOIN tbUsuario ON tbUsuario.idUsuario = tbPostagem.idUsuario JOIN tbPerfil ON tbPerfil.idUsuario = tbUsuario.idUsuario JOIN tbEmpresa on tbUsuario.idUsuario = tbEmpresa.idUsuario
+                WHERE
+                    statusPostagem = 'ativo'
+                AND
+                    categoriaPostagem = 'emprego'
                 ORDER BY
                     tbPostagem.dataCriacao DESC
             `);
@@ -136,6 +142,8 @@ router.route("/all/:usuario").get(async (req, res) => {
                     tbVaga ON tbPostagem.idPostagem = tbVaga.idPostagem
                 WHERE
                     tbUsuario.usuario = '${usuario}'
+                AND
+                    statusPostagem = 'ativo'
                 ORDER BY
                     tbPostagem.dataCriacao DESC
             `);
@@ -542,7 +550,7 @@ router.route("/last/:usuario").get(async (req, res) => {
         const idVaga = ultimoPost[0].idVaga;
 
         const candidatos = await query(`
-            SELECT 
+            SELECT
                 COUNT(tbCandidatoVaga.idVaga) AS candidatos
             FROM
                 tbCandidatoVaga
@@ -665,7 +673,7 @@ router.route("/stats/:usuario").get(async (req, res) => {
 router.route("/status/:id").put(async (req, res) => {
     const { id } = req.params;
 
-    if (!id) { 
+    if (!id) {
         return res
             .status(400)
             .json({ erro: "`id` não é um campo válido." });
@@ -676,11 +684,11 @@ router.route("/status/:id").put(async (req, res) => {
         const postagem = await query(
             `SELECT categoriaPostagem FROM tbPostagem WHERE idPostagem = ${id}`
         );
-        
+
         if (postagem.length === 0) {
             throw new Error('Postagem não encontrada.');
         }
-        
+
         const exclusaoPostagem = await query(
             `UPDATE tbPostagem SET statusPostagem = 'excluido' WHERE idPostagem = ${id}`
         );
@@ -689,7 +697,7 @@ router.route("/status/:id").put(async (req, res) => {
             const exclusaoVaga = await query(
                 `UPDATE tbVaga SET statusVaga = 'excluido' WHERE idPostagem = ${id}`
             );
-            
+
             const exclusaoCandidato = await query(
                 `UPDATE tbCandidatoVaga
                 SET statusCandidato = 'excluido'
@@ -713,16 +721,16 @@ router.route("/vaga-stats").get(async (req, res) => {
     try {
         const stats = await query(`
             SELECT
-                DATE_FORMAT(tbPostagem.dataCriacao, '%b') AS mes, 
+                DATE_FORMAT(tbPostagem.dataCriacao, '%b') AS mes,
                 YEAR(tbPostagem.dataCriacao) AS ano,
                 COUNT(tbVaga.idVaga) AS totalVagas
             FROM
                 tbPostagem
             LEFT JOIN
                 tbVaga ON tbPostagem.idPostagem = tbVaga.idPostagem
-            GROUP BY 
+            GROUP BY
                 YEAR(tbPostagem.dataCriacao), MONTH(tbPostagem.dataCriacao)
-            ORDER BY 
+            ORDER BY
                 YEAR(tbPostagem.dataCriacao), MONTH(tbPostagem.dataCriacao)
         `);
 
