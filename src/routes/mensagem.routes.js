@@ -183,7 +183,7 @@ router.get('/mensagens/:idUsuario', async (req, res) => {
                 m.tipoMensagem,
                 u.usuario,
                 DATE_FORMAT(m.dataCriacao, '%H:%i') AS horario, 
-                FORMAT(m.dataCriacao, 'dd/MM/yyyy') AS data,
+                DATE_FORMAT(m.dataCriacao, '%d/%m/%Y') AS data,
                 p.fotoPerfil
             FROM
                 tbMensagem m
